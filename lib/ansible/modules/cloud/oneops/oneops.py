@@ -46,13 +46,22 @@ RETURN = '''
 
 from ansible.module_utils.basic import AnsibleModule
 
-def run_module():
-    # define available arguments/parameters a user can pass to the module
-    module_args = dict(
+
+def get_oneops_module_argument_spec():
+    return dict(
         oneops_host=dict(type='str', required=True),
         api_key=dict(type="str", required=True)
     )
 
+
+def get_oneops_ansible_module():
+    return AnsibleModule(
+        argument_spec=get_oneops_module_argument_spec(),
+        supports_check_mode=True
+    )
+
+
+def run_module():
     # seed the result dict in the object
     # we primarily care about changed and state
     # change is if this module effectively modified the target
@@ -66,10 +75,7 @@ def run_module():
     # this includes instantiation, a couple of common attr would be the
     # args/params passed to the execution, as well as if the module
     # supports check mode
-    module = AnsibleModule(
-        argument_spec=module_args,
-        supports_check_mode=True
-    )
+    module = get_oneops_ansible_module()
 
     # if the user is working with this module in only check mode we do not
     # want to make any changes to the environment, just return the current
@@ -81,8 +87,10 @@ def run_module():
     # simple AnsibleModule.exit_json(), passing the key/value results
     module.exit_json(**result)
 
+
 def main():
     run_module()
+
 
 if __name__ == '__main__':
     main()
