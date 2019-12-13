@@ -1,6 +1,7 @@
 import json
 
 from ansible.module_utils import urls
+from ansible.module_utils.oneops import module_argument_spec
 
 
 def fetch_oneops_api(module, uri='/', method='GET', data=None, json=None, headers={}):
@@ -229,4 +230,241 @@ class OneOpsPlatform:
         )
         return json.loads(resp.read())
 
+
 # end class OneOpsPlatform
+
+
+class OneOpsCloud:
+    @staticmethod
+    def all(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/clouds' % (
+                module.params['organization'],
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def get(module, cloud):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/clouds/%s' % (
+                module.params['organization'],
+                cloud
+            )
+        )
+        return json.loads(resp.read())
+
+
+# end class OneOpsCloud
+
+class OneOpsEnvironment:
+
+    @staticmethod
+    def all(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/transition/environments' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def get(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/transition/environments/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def exists(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/transition/environments/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+            )
+        )
+        return info['status'] == 200
+
+    @staticmethod
+    def build_environment_config(module):
+        platforms = OneOpsPlatform.all(module)
+        platform_availability = module_argument_spec.merge_dicts({}, list(
+            map(lambda platform: dict({platform['ciId']: 'redundant'}), platforms)))
+
+        def build_cloud_dict(cloud_def):
+            cloud = OneOpsCloud.get(module, cloud_def['name'])
+            return dict({cloud['ciId']: dict({
+                'priority': '1',
+                'dpmt_order': '1',
+                'pct_scale': '100'
+            })})
+
+        clouds = dict()
+
+        if module.params['environment']['clouds']:
+            clouds = module_argument_spec.merge_dicts({}, list(
+                map(build_cloud_dict, module.params['environment']['clouds'])))
+
+        return {
+            'clouds': clouds,
+            'platform_availability': platform_availability,
+            'cms_ci': {
+                "ciName": module.params['environment']['name'],
+                'nsPath': '%s/%s' % (
+                    module.params['organization'],
+                    module.params['assembly']['name']
+                ),
+                'ciAttributes': {
+                    'debug': 'false',
+                    'codpmt': 'false',
+                    'profile': module.params['environment']['profile'],
+                    'description': module.params['environment']['description'],
+                    'availability': module.params['environment']['availability'],
+                    'monitoring': 'true' if module.params['environment']['monitoring'] else 'false',
+                    'autoscale': 'true' if module.params['environment']['autoscale'] else 'false',
+                    'adminstatus': 'active',
+                    'global_dns': 'true' if module.params['environment']['global_dns'] else 'false',
+                    'verify': 'default',
+                    'subdomain': module.params['environment']['subdomain'],
+                    'logging': 'false',
+                    'dpmtdelay': '60',
+                    'autoreplace': 'true' if module.params['environment']['autoreplace'] else 'false',
+                    'autorepair': 'true' if module.params['environment']['autorepair'] else 'false',
+                }
+            }
+        }
+
+    @staticmethod
+    def create(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="POST",
+            uri='%s/assemblies/%s/transition/environments' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+            ),
+            json=OneOpsEnvironment.build_environment_config(module)
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def update(module):
+        json = OneOpsEnvironment.build_environment_config(module)
+        del json['cms_ci']['nsPath']
+        resp, info = fetch_oneops_api(
+            module,
+            method="PUT",
+            uri='%s/assemblies/%s/transition/environments/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name']
+            ),
+            json=json
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def upsert(module):
+        if OneOpsEnvironment.exists(module):
+            return OneOpsEnvironment.update(module)
+        else:
+            return OneOpsEnvironment.create(module)
+
+    @staticmethod
+    def delete(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="DELETE",
+            uri='%s/assemblies/%s/transition/environments/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name']
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def pull_design(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="POST",
+            uri='%s/assemblies/%s/transition/environments/%s/pull' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name']
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def commit(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="POST",
+            uri='%s/assemblies/%s/transition/environments/%s/commit' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name']
+            ),
+            json={
+                'desc': 'This release comitted by OneOps Ansible module'
+            }
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def discard(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="POST",
+            uri='%s/assemblies/%s/transition/environments/%s/discard' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name']
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def enable(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="PUT",
+            uri='%s/assemblies/%s/transition/environments/%s/enable' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name']
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def disable(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="PUT",
+            uri='%s/assemblies/%s/transition/environments/%s/disable' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name']
+            )
+        )
+        return json.loads(resp.read())
+
+# end class OneOpsEnvironment

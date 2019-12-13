@@ -63,6 +63,29 @@ def get_oneops_argument_spec_fragment_platform():
     )
 
 
+def get_oneops_argument_spec_fragment_environment():
+    return dict(
+        environment=dict(type='dict', required=True, options=dict(
+            name=dict(type='str', required=True),
+            description=dict(type='str', required=False, default="This environment created by the OneOps Ansible module"),
+            profile=dict(type='str', required=True),
+            availability=dict(default='redundant', choices=['single', 'redundant']),
+            monitoring=dict(type='bool', required=False, default=False),
+            autoscale=dict(type='bool', required=False, default=False),
+            autoreplace=dict(type='bool', required=False, default=False),
+            autorepair=dict(type='bool', required=False, default=False),
+            global_dns=dict(type='bool', required=False, default=True),
+            subdomain=dict(type='str', required=False),
+            clouds=dict(type='list', required=False, elements='dict', options=dict(
+                name=dict(type='str', required=True),
+                priority=dict(type='int', required=False, default=1),
+                dpmt_order=dict(type='int', required=False, default=1),
+                pct_scale=dict(type='int', required=False, default=100),
+            ), default=[]),
+        ))
+    )
+
+
 def get_oneops_module_argument_spec():
     return merge_dicts(dict(), (
         get_oneops_argument_spec_fragment_base()
@@ -85,4 +108,14 @@ def get_oneops_platform_module_argument_spec():
         get_oneops_argument_spec_fragment_assembly(),
         get_oneops_argument_spec_fragment_platform(),
         dict(state=dict(default='present', choices=['present', 'created', 'absent']))
+    ))
+
+
+def get_oneops_environment_module_argument_spec():
+    return merge_dicts(dict(), (
+        get_oneops_argument_spec_fragment_base(),
+        get_oneops_argument_spec_fragment_organization(),
+        get_oneops_argument_spec_fragment_assembly(),
+        get_oneops_argument_spec_fragment_environment(),
+        dict(state=dict(default='created', choices=['created', 'absent']))
     ))
