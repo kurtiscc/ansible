@@ -49,6 +49,98 @@ options:
                     - A name for the assembly the environment will be under
                 required: true
                 type: str
+    environment:
+        description:
+            - A hash/dictionary of environment configuration used to create the environment
+        required: true
+        type: dict
+        suboptions:
+            name:
+                description:
+                    - A name for the environment
+                required: true
+                type: str
+            description:
+                description:
+                    - A useful description for your platform
+                required: false
+                type: str
+                default: "This environment created by the OneOps Ansible module"
+            profile:
+                description:
+                    - The profile for the environment
+                required: true
+                type: str
+            availability:
+                description:
+                    - Single or redundant availability
+                required: false
+                choices: ['single', 'redundant']
+                default: 'redundant'
+            monitoring:
+                description:
+                    - Turn on/off monitoring
+                type: bool
+                required: false
+                default: False
+            autoscale:
+                description:
+                    - Turn on/off autoscale
+                type: bool
+                required: false
+                default: false
+            autoreplace:
+                description:
+                    - Turn on/off autoreplace
+                type: bool
+                required: false
+                default: false
+            autorepair:
+                description:
+                    - Turn on/off autorepair
+                type: bool
+                required: false
+                default: false
+            global_dns:
+                description:
+                    - Turn on/off global_dns
+                type: bool
+                required: false
+                default: true
+            subdomain:
+                description:
+                    - The subdomain for the environment 
+                type: str
+                required: false
+            clouds:
+                description:
+                    - A list of hashes/dictionaries of cloud configuration used to deploy the environment
+                required: false
+                type: dict
+                suboptions:
+                    name:
+                        description:
+                            - A valid name of a registered cloud
+                        required: true
+                        type: str
+                    priority:
+                        description:
+                            - Make this cloud primary or secondary
+                        required: false
+                        choices: [1, 2]
+                        default: 1
+                    dpmt_order:
+                        description:
+                            - Order of deployment for this cloud
+                        required: false
+                        type: int
+                        default: 1
+                    pct_scale:
+                        description:
+                            - Percentage of instances to be deployed in this cloud
+                        required: false
+                        type: int
+                        default: 100
 
 author:
     - Tate Barber (@tatemz)
@@ -71,7 +163,7 @@ EXAMPLES = '''
       description: A description of my environment
       profile: DEV
       clouds:
-        - name: prod-az-southcentralus-7
+        - name: dev-cloud-1
     state: created
 '''
 

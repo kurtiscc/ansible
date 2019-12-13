@@ -78,7 +78,7 @@ def get_oneops_argument_spec_fragment_environment():
             subdomain=dict(type='str', required=False),
             clouds=dict(type='list', required=False, elements='dict', options=dict(
                 name=dict(type='str', required=True),
-                priority=dict(type='int', required=False, default=1),
+                priority=dict(required=False, default=1, choices=[1, 2]),
                 dpmt_order=dict(type='int', required=False, default=1),
                 pct_scale=dict(type='int', required=False, default=100),
             ), default=[]),
