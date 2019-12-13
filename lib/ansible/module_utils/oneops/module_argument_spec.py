@@ -47,6 +47,22 @@ def get_oneops_argument_spec_fragment_assembly():
     )
 
 
+def get_oneops_argument_spec_fragment_platform():
+    return dict(
+        platform=dict(type='dict', required=True, options=dict(
+            name=dict(type='str', required=True),
+            comments=dict(type='str', required=False, default="This platform created by the OneOps Ansible module"),
+            description=dict(type='str', required=False, default="This platform created by the OneOps Ansible module"),
+            pack=dict(type='dict', required=False, options=dict(
+                source=dict(type='str', required=False, default='oneops'),
+                name=dict(type='str', required=False, default='custom'),
+                major_version=dict(type='str', required=False, default='1'),
+                version=dict(type='str', required=False, default='1')
+            ), default=dict()),
+        ))
+    )
+
+
 def get_oneops_module_argument_spec():
     return merge_dicts(dict(), (
         get_oneops_argument_spec_fragment_base()
@@ -58,5 +74,15 @@ def get_oneops_assembly_module_argument_spec():
         get_oneops_argument_spec_fragment_base(),
         get_oneops_argument_spec_fragment_organization(),
         get_oneops_argument_spec_fragment_assembly(),
+        dict(state=dict(default='present', choices=['present', 'created', 'absent']))
+    ))
+
+
+def get_oneops_platform_module_argument_spec():
+    return merge_dicts(dict(), (
+        get_oneops_argument_spec_fragment_base(),
+        get_oneops_argument_spec_fragment_organization(),
+        get_oneops_argument_spec_fragment_assembly(),
+        get_oneops_argument_spec_fragment_platform(),
         dict(state=dict(default='present', choices=['present', 'created', 'absent']))
     ))

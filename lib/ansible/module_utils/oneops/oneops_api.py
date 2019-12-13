@@ -33,7 +33,6 @@ class OneOpsAssembly:
         )
         return json.loads(response.read())
 
-
     @staticmethod
     def get(module):
         resp, info = fetch_oneops_api(
@@ -44,7 +43,6 @@ class OneOpsAssembly:
             )
         )
         return json.loads(resp.read())
-
 
     @staticmethod
     def exists(module):
@@ -78,7 +76,6 @@ class OneOpsAssembly:
         )
         return json.loads(resp.read())
 
-
     @staticmethod
     def update(module):
         resp, info = fetch_oneops_api(
@@ -108,7 +105,6 @@ class OneOpsAssembly:
         else:
             return OneOpsAssembly.create(module)
 
-
     @staticmethod
     def delete(module):
         resp, info = fetch_oneops_api(
@@ -121,4 +117,116 @@ class OneOpsAssembly:
         )
         return json.loads(resp.read())
 
+
 # end class OneOpsAssembly
+
+
+class OneOpsPlatform:
+
+    @staticmethod
+    def all(module):
+        resp, info = fetch_oneops_api(
+            module,
+            uri='%s/assemblies/%s/design/platforms' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def get(module):
+        resp, info = fetch_oneops_api(
+            module,
+            uri='%s/assemblies/%s/design/platforms/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def exists(module):
+        resp, info = fetch_oneops_api(
+            module,
+            uri='%s/assemblies/%s/design/platforms/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+            )
+        )
+        return info['status'] == 200
+
+    @staticmethod
+    def create(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="POST",
+            uri='%s/assemblies/%s/design/platforms' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+            ),
+            json={
+                'cms_dj_ci': {
+                    'comments': module.params['platform']['comments'],
+                    'ciName': module.params['platform']['name'],
+                    'ciAttributes': {
+                        'description': module.params['platform']['description'],
+                        'source': module.params['platform']['pack']['source'],
+                        'pack': module.params['platform']['pack']['name'],
+                        'major_version': module.params['platform']['pack']['major_version'],
+                        'version': module.params['platform']['pack']['version'],
+                    }
+                }
+            }
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def update(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="PUT",
+            uri='%s/assemblies/%s/design/platforms/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+            ),
+            json={
+                'cms_dj_ci': {
+                    'comments': module.params['platform']['comments'],
+                    'ciName': module.params['platform']['name'],
+                    'ciAttributes': {
+                        'description': module.params['platform']['description'],
+                        'source': module.params['platform']['pack']['source'],
+                        'pack': module.params['platform']['pack']['name'],
+                        'major_version': module.params['platform']['pack']['major_version'],
+                        'version': module.params['platform']['pack']['version'],
+                    }
+                }
+            }
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def upsert(module):
+        if OneOpsPlatform.exists(module):
+            return OneOpsPlatform.update(module)
+        else:
+            return OneOpsPlatform.create(module)
+
+    @staticmethod
+    def delete(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="DELETE",
+            uri='%s/assemblies/%s/design/platforms/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+            )
+        )
+        return json.loads(resp.read())
+
+# end class OneOpsPlatform
