@@ -1,8 +1,5 @@
 #!/usr/bin/python
 
-# Copyright: (c) 2018, Terry Jones <terry.jones@example.org>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
-
 ANSIBLE_METADATA = {
     'metadata_version': '1.1',
     'status': ['preview'],
@@ -13,7 +10,7 @@ DOCUMENTATION = '''
 ---
 module: oneops
 
-short_description: A module for provisioning and scaling OneOps computes
+short_description: A module for provisioning a OneOps in bulk
 
 version_added: "2.4"
 
@@ -25,38 +22,35 @@ options:
         description:
             - The hostname of the OneOps instance
         required: true
+        type: str
     api_key:
         description:
             - A user's API key for communicating with the OneOps instance
         required: true
+        type: str
 
 author:
     - Tate Barber (@tatemz)
 '''
 
 EXAMPLES = '''
-# Run the OneOps module
-- name: Test the OneOps modules
+# Provision OneOps
+- name: Provision OneOps
   oneops:
     oneops_host: oneops.example.com
+    api_key: 12345abcde
 '''
 
 RETURN = '''
 '''
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.oneops import module_argument_spec
 
 
-def get_oneops_module_argument_spec():
-    return dict(
-        oneops_host=dict(type='str', required=True),
-        api_key=dict(type="str", required=True)
-    )
-
-
-def get_oneops_ansible_module():
+def get_oneops_module():
     return AnsibleModule(
-        argument_spec=get_oneops_module_argument_spec(),
+        argument_spec=module_argument_spec.get_oneops_module_argument_spec(),
         supports_check_mode=True
     )
 
@@ -75,7 +69,7 @@ def run_module():
     # this includes instantiation, a couple of common attr would be the
     # args/params passed to the execution, as well as if the module
     # supports check mode
-    module = get_oneops_ansible_module()
+    module = get_oneops_module()
 
     # if the user is working with this module in only check mode we do not
     # want to make any changes to the environment, just return the current

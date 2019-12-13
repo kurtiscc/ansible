@@ -17,9 +17,11 @@ def validate_missing_params(capfd, module_params={}, results_msg_list=()):
     assert all(txt in results['msg'] for txt in results_msg_list)
 
 
-def test_mandatory_oneops_host(capfd):
+def test_mandatory_oneops_arguments(capfd):
+    # oneops_host
     validate_missing_params(capfd=capfd, module_params={},
                             results_msg_list=('missing', 'required', 'oneops_host'))
+    # api_key
     validate_missing_params(capfd=capfd, module_params={
         'oneops_host': 'foobar.com'
     }, results_msg_list=('missing', 'required', 'api_key'))

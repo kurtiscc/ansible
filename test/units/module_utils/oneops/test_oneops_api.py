@@ -15,7 +15,7 @@ default_module_args = {
 def test_fetch_oneops_api(mocker):
     set_module_args(default_module_args)
 
-    module = oneops.get_oneops_ansible_module()
+    module = oneops.get_oneops_module()
 
     open_url_mock = mocker.patch('ansible.module_utils.urls.open_url')
     oneops_api.fetch_oneops_api(module, uri='/')
@@ -26,7 +26,7 @@ def test_fetch_oneops_api(mocker):
 def test_fetch_oneops_api_with_json(mocker):
     set_module_args(default_module_args)
 
-    module = oneops.get_oneops_ansible_module()
+    module = oneops.get_oneops_module()
 
     open_url_mock = mocker.patch('ansible.module_utils.urls.open_url')
     oneops_api.fetch_oneops_api(module, uri='/', json={"message": "test"})
