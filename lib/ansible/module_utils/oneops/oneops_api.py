@@ -323,9 +323,11 @@ class OneOpsComponent:
                 module.params['component']['name'],
             ),
             json={
-                'ciName': module.params['component']['name'],
-                'comments': module.params['component']['comments'],
-                'ciAttributes': module.params['component']['attr'],
+                'cms_dj_ci': {
+                    'ciName': module.params['component']['name'] or None,
+                    'comments': module.params['component']['comments'] or None,
+                    'ciAttributes': module.params['component']['attr'] or {},
+                },
             },
         )
         return json.loads(resp.read())
