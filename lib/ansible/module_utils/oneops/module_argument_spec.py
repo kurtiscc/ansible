@@ -43,6 +43,7 @@ def get_oneops_argument_spec_fragment_assembly():
             name=dict(type='str', required=True),
             comments=dict(type='str', required=False, default="This assembly created by the OneOps Ansible module"),
             description=dict(type='str', required=False, default="This assembly created by the OneOps Ansible module"),
+            state=dict(type='str', default='present', choices=['present', 'absent']),
         ))
     )
 
@@ -59,6 +60,18 @@ def get_oneops_argument_spec_fragment_platform():
                 major_version=dict(type='str', required=False, default='1'),
                 version=dict(type='str', required=False, default='1')
             ), default=dict()),
+            state=dict(type='str', default='present', choices=['present', 'absent']),
+        ))
+    )
+
+
+def get_oneops_argument_spec_fragment_component():
+    return dict(
+        component=dict(type='dict', required=True, options=dict(
+            name=dict(type='str', required=True),
+            template_name=dict(type='str', required=True),
+            comments=dict(type='str', required=False, default="This component created by the OneOps Ansible module"),
+            state=dict(type='str', default='present', choices=['present', 'absent']),
         ))
     )
 
@@ -67,21 +80,17 @@ def get_oneops_argument_spec_fragment_environment():
     return dict(
         environment=dict(type='dict', required=True, options=dict(
             name=dict(type='str', required=True),
+            comments=dict(type='str', required=False, default="This environment created by the OneOps Ansible module"),
             description=dict(type='str', required=False, default="This environment created by the OneOps Ansible module"),
-            profile=dict(type='str', required=True),
-            availability=dict(default='redundant', choices=['single', 'redundant']),
-            monitoring=dict(type='bool', required=False, default=False),
-            autoscale=dict(type='bool', required=False, default=False),
-            autoreplace=dict(type='bool', required=False, default=False),
-            autorepair=dict(type='bool', required=False, default=False),
-            global_dns=dict(type='bool', required=False, default=True),
-            subdomain=dict(type='str', required=False),
             clouds=dict(type='list', required=False, elements='dict', options=dict(
                 name=dict(type='str', required=True),
-                priority=dict(required=False, default=1, choices=[1, 2]),
+                priority=dict(type='int', required=False, default=1, choices=[1, 2]),
                 dpmt_order=dict(type='int', required=False, default=1),
                 pct_scale=dict(type='int', required=False, default=100),
             ), default=[]),
+            attr=dict(type='dict', required=False, default=dict()),
+            deployment=dict(type='str', default='complete', choices=['complete']),
+            state=dict(type='str', default='present', choices=['present', 'absent']),
         ))
     )
 
@@ -97,7 +106,6 @@ def get_oneops_assembly_module_argument_spec():
         get_oneops_argument_spec_fragment_base(),
         get_oneops_argument_spec_fragment_organization(),
         get_oneops_argument_spec_fragment_assembly(),
-        dict(state=dict(default='present', choices=['present', 'created', 'absent']))
     ))
 
 
@@ -107,7 +115,16 @@ def get_oneops_platform_module_argument_spec():
         get_oneops_argument_spec_fragment_organization(),
         get_oneops_argument_spec_fragment_assembly(),
         get_oneops_argument_spec_fragment_platform(),
-        dict(state=dict(default='present', choices=['present', 'created', 'absent']))
+    ))
+
+
+def get_oneops_component_module_argument_spec():
+    return merge_dicts(dict(), (
+        get_oneops_argument_spec_fragment_base(),
+        get_oneops_argument_spec_fragment_organization(),
+        get_oneops_argument_spec_fragment_assembly(),
+        get_oneops_argument_spec_fragment_platform(),
+        get_oneops_argument_spec_fragment_component(),
     ))
 
 
@@ -117,5 +134,4 @@ def get_oneops_environment_module_argument_spec():
         get_oneops_argument_spec_fragment_organization(),
         get_oneops_argument_spec_fragment_assembly(),
         get_oneops_argument_spec_fragment_environment(),
-        dict(state=dict(default='created', choices=['created', 'absent']))
     ))

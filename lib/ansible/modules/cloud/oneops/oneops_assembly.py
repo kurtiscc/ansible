@@ -101,25 +101,6 @@ def get_oneops_assembly_module():
     )
 
 
-def create_assembly(module, state):
-    if not oneops_api.OneOpsAssembly.exists(module):
-        state.update(dict(changed=True))
-
-        if module.check_mode:
-            module.exit_json(**state)
-
-        assembly = oneops_api.OneOpsAssembly.create(module)
-        state.update(dict(
-            assembly=assembly
-        ))
-    else:
-        state.update(dict(
-            assembly=oneops_api.OneOpsAssembly.get(module)
-        ))
-
-    module.exit_json(**state)
-
-
 def ensure_assembly(module, state):
     old_assembly = dict()
     if oneops_api.OneOpsAssembly.exists(module):
@@ -161,13 +142,10 @@ def run_module():
     # supports check mode
     module = get_oneops_assembly_module()
 
-    if module.params['state'] == 'created':
-        return create_assembly(module, state)
-
-    if module.params['state'] == 'present':
+    if module.params['assembly']['state'] == 'present':
         return ensure_assembly(module, state)
 
-    if module.params['state'] == 'absent':
+    if module.params['assembly']['state'] == 'absent':
         return delete_assembly(module, state)
 
     # if the user is working with this module in only check mode we do not
