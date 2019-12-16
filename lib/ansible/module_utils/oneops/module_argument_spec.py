@@ -54,12 +54,7 @@ def get_oneops_argument_spec_fragment_platform():
             name=dict(type='str', required=True),
             comments=dict(type='str', required=False, default="This platform created by the OneOps Ansible module"),
             description=dict(type='str', required=False, default="This platform created by the OneOps Ansible module"),
-            pack=dict(type='dict', required=False, options=dict(
-                source=dict(type='str', required=False, default='oneops'),
-                name=dict(type='str', required=False, default='custom'),
-                major_version=dict(type='str', required=False, default='1'),
-                version=dict(type='str', required=False, default='1')
-            ), default=dict()),
+            attr=dict(type='dict', required=False, default=dict()),
             state=dict(type='str', default='present', choices=['present', 'absent']),
         ))
     )
@@ -71,6 +66,7 @@ def get_oneops_argument_spec_fragment_component():
             name=dict(type='str', required=True),
             template_name=dict(type='str', required=True),
             comments=dict(type='str', required=False, default="This component created by the OneOps Ansible module"),
+            attr=dict(type='dict', required=False, default=dict()),
             state=dict(type='str', default='present', choices=['present', 'absent']),
         ))
     )

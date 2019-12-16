@@ -146,6 +146,17 @@ def get_oneops_platform_module():
         supports_check_mode=True,
     )
 
+def commit_latest_design_release(module, state):
+    try:
+        release = oneops_api.OneOpsDesignRelease.latest(module)
+    except AttributeError:
+        release = None
+
+    if release and release['releaseState'] == 'open':
+        state.update({'changed': True})
+        oneops_api.OneOpsDesignRelease.commit(module, release['releaseId'])
+
+    return state
 
 def ensure_platform(module, state):
     old_platform = dict()
@@ -174,6 +185,8 @@ def ensure_platform(module, state):
         changed=(diff is not None or atts_diff is not None),
         platform=new_platform,
     ))
+
+    state = commit_latest_design_release(module, state)
 
     module.exit_json(**state)
 

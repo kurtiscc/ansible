@@ -162,6 +162,23 @@ class OneOpsPlatform:
 
     @staticmethod
     def create(module):
+        # You can hit `%s/assemblies/%s/design/platforms/new.json` to get the default json for a platform
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/design/platforms/new.json' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+            )
+        )
+        defaults = json.loads(resp.read())
+        cms_dj_ci = module_argument_spec.merge_dicts({}, (defaults, {
+            'ciName': module.params['platform']['name'],
+            'comments': module.params['platform']['comments'],
+            'ciAttributes': module_argument_spec.merge_dicts({
+                'description': module.params['platform']['description'],
+            }, module.params['platform']['attr']),
+        }))
         resp, info = fetch_oneops_api(
             module,
             method="POST",
@@ -169,24 +186,19 @@ class OneOpsPlatform:
                 module.params['organization'],
                 module.params['assembly']['name'],
             ),
-            json={
-                'cms_dj_ci': {
-                    'comments': module.params['platform']['comments'],
-                    'ciName': module.params['platform']['name'],
-                    'ciAttributes': {
-                        'description': module.params['platform']['description'],
-                        'source': module.params['platform']['pack']['source'],
-                        'pack': module.params['platform']['pack']['name'],
-                        'major_version': module.params['platform']['pack']['major_version'],
-                        'version': module.params['platform']['pack']['version'],
-                    }
-                }
-            }
+            json={'cms_dj_ci': cms_dj_ci}
         )
         return json.loads(resp.read())
 
     @staticmethod
     def update(module):
+        cms_dj_ci = module_argument_spec.merge_dicts({}, ({
+            'ciName': module.params['platform']['name'],
+            'comments': module.params['platform']['comments'],
+            'ciAttributes': module_argument_spec.merge_dicts({
+                'description': module.params['platform']['description'],
+            }, module.params['platform']['attr']),
+        }))
         resp, info = fetch_oneops_api(
             module,
             method="PUT",
@@ -195,19 +207,7 @@ class OneOpsPlatform:
                 module.params['assembly']['name'],
                 module.params['platform']['name'],
             ),
-            json={
-                'cms_dj_ci': {
-                    'comments': module.params['platform']['comments'],
-                    'ciName': module.params['platform']['name'],
-                    'ciAttributes': {
-                        'description': module.params['platform']['description'],
-                        'source': module.params['platform']['pack']['source'],
-                        'pack': module.params['platform']['pack']['name'],
-                        'major_version': module.params['platform']['pack']['major_version'],
-                        'version': module.params['platform']['pack']['version'],
-                    }
-                }
-            }
+            json={'cms_dj_ci': cms_dj_ci}
         )
         return json.loads(resp.read())
 
@@ -233,6 +233,7 @@ class OneOpsPlatform:
 
 
 # end class OneOpsPlatform
+
 
 class OneOpsComponent:
 
@@ -262,13 +263,6 @@ class OneOpsComponent:
         return json.loads(resp.read())
 
     @staticmethod
-    def upsert(module):
-        if OneOpsComponent.exists(module):
-            return OneOpsComponent.update(module)
-        else:
-            return OneOpsComponent.create(module)
-
-    @staticmethod
     def exists(module):
         resp, info = fetch_oneops_api(
             module,
@@ -296,10 +290,12 @@ class OneOpsComponent:
             )
         )
         defaults = json.loads(resp.read())
-        defaults.update({
+        cms_dj_ci = module_argument_spec.merge_dicts({}, (defaults, {
             'ciName': module.params['component']['name'],
             'comments': module.params['component']['comments'],
-        })
+            'rfcAction': 'add',
+            'ciAttributes': module.params['component']['attr'],
+        }))
         resp, info = fetch_oneops_api(
             module,
             method="POST",
@@ -310,7 +306,7 @@ class OneOpsComponent:
             ),
             json={
                 'template_name': module.params['component']['template_name'],
-                'cms_dj_ci': defaults,
+                'cms_dj_ci': cms_dj_ci,
             }
         )
         return json.loads(resp.read())
@@ -327,12 +323,19 @@ class OneOpsComponent:
                 module.params['component']['name'],
             ),
             json={
-                'cms_dj_ci': {
-                    'ciAttributes': {},
-                },
+                'ciName': module.params['component']['name'],
+                'comments': module.params['component']['comments'],
+                'ciAttributes': module.params['component']['attr'],
             },
         )
         return json.loads(resp.read())
+
+    @staticmethod
+    def upsert(module):
+        if OneOpsComponent.exists(module):
+            return OneOpsComponent.update(module)
+        else:
+            return OneOpsComponent.create(module)
 
     @staticmethod
     def delete(module):
@@ -350,6 +353,77 @@ class OneOpsComponent:
 
 
 # end class OneOpsComponent
+
+class OneOpsDesignRelease:
+
+    @staticmethod
+    def all(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/design/releases' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+            )
+        )
+        return json.loads(resp.reads())
+
+    @staticmethod
+    def get(module, release):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/design/releases/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                release
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def latest(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/design/releases/latest' % (
+                module.params['organization'],
+                module.params['assembly']['name']
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def commit(module, release):
+        resp, info = fetch_oneops_api(
+            module,
+            method="POST",
+            uri='%s/assemblies/%s/design/releases/%s/commit' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                release
+            ),
+            json={
+                'desc': 'This release comitted by OneOps Ansible module'
+            }
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def discard(module, release):
+        resp, info = fetch_oneops_api(
+            module,
+            method="POST",
+            uri='%s/assemblies/%s/design/releases/%s/discard' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                release
+            )
+        )
+        return json.loads(resp.read())
+
+
+# end class OneOpsDesignRelease
 
 
 class OneOpsCloud:
@@ -433,8 +507,10 @@ class OneOpsEnvironment:
         cms_ci = module_argument_spec.merge_dicts({}, (env_defaults, {
             'ciName': module.params['environment']['name'],
             'comments': module.params['environment']['comments'],
-            'ciAttributes': module_argument_spec.merge_dicts(
-                {'description': module.params['environment']['description']}, module.params['environment']['attr']),
+            'ciAttributes': module_argument_spec.merge_dicts({}, (
+                {'description': module.params['environment']['description']},
+                module.params['environment']['attr']),
+            ),
         }))
 
         del cms_ci['ciClassName']

@@ -147,6 +147,19 @@ def get_oneops_component_module():
     )
 
 
+def commit_latest_design_release(module, state):
+    try:
+        release = oneops_api.OneOpsDesignRelease.latest(module)
+    except AttributeError:
+        release = None
+
+    if release and release['releaseState'] == 'open':
+        state.update({'changed': True})
+        oneops_api.OneOpsDesignRelease.commit(module, release['releaseId'])
+
+    return state
+
+
 def ensure_component(module, state):
     old_component = dict()
 
@@ -169,6 +182,8 @@ def ensure_component(module, state):
         changed=diff is not None,
         component=new_component,
     ))
+
+    state = commit_latest_design_release(module, state)
 
     module.exit_json(**state)
 
