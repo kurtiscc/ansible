@@ -77,7 +77,8 @@ def get_oneops_argument_spec_fragment_environment():
         environment=dict(type='dict', required=True, options=dict(
             name=dict(type='str', required=True),
             comments=dict(type='str', required=False, default="This environment created by the OneOps Ansible module"),
-            description=dict(type='str', required=False, default="This environment created by the OneOps Ansible module"),
+            description=dict(type='str', required=False,
+                             default="This environment created by the OneOps Ansible module"),
             clouds=dict(type='list', required=False, elements='dict', options=dict(
                 name=dict(type='str', required=True),
                 priority=dict(type='int', required=False, default=1, choices=[1, 2]),
@@ -95,7 +96,17 @@ def get_oneops_argument_spec_fragment_transition_platform():
     return dict(
         platform=dict(type='dict', required=True, options=dict(
             name=dict(type='str', required=True),
-            state=dict(type='str', default='present', choices=['enabled', 'disabled']),
+            state=dict(type='str', default='enabled', choices=['enabled', 'disabled']),
+        ))
+    )
+
+
+def get_oneops_argument_spec_fragment_transition_component():
+    return dict(
+        component=dict(type='dict', required=True, options=dict(
+            name=dict(type='str', required=True),
+            attr=dict(type='dict', required=False, default=dict()),
+            state=dict(type='str', required=False, default='updated', choices=['updated', 'touched']),
         ))
     )
 
@@ -149,4 +160,15 @@ def get_oneops_transition_platform_module_argument_spec():
         get_oneops_argument_spec_fragment_assembly(),
         get_oneops_argument_spec_fragment_environment(),
         get_oneops_argument_spec_fragment_transition_platform(),
+    ))
+
+
+def get_oneops_transition_component_module_argument_spec():
+    return merge_dicts(dict(), (
+        get_oneops_argument_spec_fragment_base(),
+        get_oneops_argument_spec_fragment_organization(),
+        get_oneops_argument_spec_fragment_assembly(),
+        get_oneops_argument_spec_fragment_environment(),
+        get_oneops_argument_spec_fragment_transition_platform(),
+        get_oneops_argument_spec_fragment_transition_component(),
     ))

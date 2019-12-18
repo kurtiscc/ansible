@@ -938,9 +938,7 @@ class OneOpsTransitionPlatform:
                 module.params['environment']['name'],
                 module.params['platform']['name'],
             ),
-            json={
-
-            }
+            json={}
         )
         return json.loads(resp.read())
 
@@ -956,3 +954,103 @@ class OneOpsTransitionPlatform:
 
 
 # end class OneOpsTransitionPlatform
+
+
+class OneOpsTransitionComponent:
+
+    @staticmethod
+    def all(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/transition/environments/%s/platforms/%s/components' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def get(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/transition/environments/%s/platforms/%s/components/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+            ),
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def exists(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/transition/environments/%s/platforms/%s/components/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+            ),
+        )
+        return info['status'] == 200
+
+    @staticmethod
+    def update(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="PUT",
+            uri='%s/assemblies/%s/transition/environments/%s/platforms/%s/components/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+            ),
+            json={
+                'cms_dj_ci': {
+                    # TODO: Handle locking and owner props https://github.com/oneops/OneOpsAPIClient/blob/master/src/main/java/com/oneops/api/resource/Transition.java#L950
+                    'ciAttributes': module.params['component']['attr'] or None
+                }
+            },
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def touch(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="POST",
+            uri='%s/assemblies/%s/transition/environments/%s/platforms/%s/components/%s/touch' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+            ),
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def deploy(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="POST",
+            uri='%s/assemblies/%s/transition/environments/%s/platforms/%s/components/%s/deploy' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+            ),
+        )
+        return json.loads(resp.read())
+
+# end class OneOpsTransitionComponent

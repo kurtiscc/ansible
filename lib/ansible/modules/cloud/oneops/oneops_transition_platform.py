@@ -144,12 +144,15 @@ def enable_platform(module, state):
         state.update(changed=True)  # TODO: Determine if platform is already enabled
         oneops_api.OneOpsTransitionPlatform.enable(module)
 
+    module.exit_json(**state)
+
 
 def disable_platform(module, state):
     if oneops_api.OneOpsTransitionPlatform.exists(module):
         state.update(changed=True)  # TODO: Determine if platform is already disabled
         oneops_api.OneOpsTransitionPlatform.enable(module)
 
+    module.exit_json(**state)
 
 def get_oneops_transition_platform_module():
     return AnsibleModule(
