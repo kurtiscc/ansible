@@ -162,7 +162,7 @@ def commit_latest_design_release(module, state):
 
 def provision_platform_variables(module, state):
     if oneops_api.OneOpsPlatform.exists(module):
-        all_vars = oneops_api.OneOpsPlatformVariable.all(module)
+        all_vars = oneops_api.OneOpsDesignVariable.all(module)
         requested_vars = module.params['platform']['variables'] or None
 
         # Loop over all existing vars and delete unnecessary ones
@@ -170,17 +170,17 @@ def provision_platform_variables(module, state):
             # Check to see if the variable is in our module platform params
             if not requested_vars or not any(v['name'] == var['ciName'] for v in requested_vars):
                 # Delete variable if not in module platform params
-                oneops_api.OneOpsPlatformVariable.delete(module, dict(name=var['ciName']))
+                oneops_api.OneOpsDesignVariable.delete(module, dict(name=var['ciName']))
                 state.update(dict(changed=True))
 
         # Loop over all vars passed as module params and upsert them
         for var in requested_vars:
             old_var = dict()
-            if oneops_api.OneOpsPlatformVariable.exists(module, var):
-                old_var = oneops_api.OneOpsPlatformVariable.get(module, var)
+            if oneops_api.OneOpsDesignVariable.exists(module, var):
+                old_var = oneops_api.OneOpsDesignVariable.get(module, var)
 
             # Update and store the var
-            new_var = oneops_api.OneOpsPlatformVariable.upsert(module, var)
+            new_var = oneops_api.OneOpsDesignVariable.upsert(module, var)
 
             # Compare the original vs the new var
             diff = dict_transformations.recursive_diff(old_var, new_var)

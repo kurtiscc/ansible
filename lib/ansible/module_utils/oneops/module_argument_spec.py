@@ -39,12 +39,12 @@ def get_oneops_argument_spec_fragment_organization():
 
 def get_oneops_argument_spec_fragment_assembly():
     return dict(
-        assembly=dict(type='dict', required=True, options=dict(
+        assembly=dict(type='dict', required=True, options=merge_dicts({}, (dict(
             name=dict(type='str', required=True),
             comments=dict(type='str', required=False, default="This assembly created by the OneOps Ansible module"),
             description=dict(type='str', required=False, default="This assembly created by the OneOps Ansible module"),
             state=dict(type='str', default='present', choices=['present', 'absent']),
-        ))
+        ), get_oneops_argument_spec_fragment_variables())))
     )
 
 

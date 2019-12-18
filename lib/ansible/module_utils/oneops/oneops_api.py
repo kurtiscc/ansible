@@ -246,17 +246,41 @@ class OneOpsPlatform:
 # end class OneOpsPlatform
 
 
-class OneOpsPlatformVariable:
+class OneOpsDesignVariable:
+    @staticmethod
+    def get_uri(module, var=None):
+        has_platform = 'platform' in module.params and 'name' in module.params['platform']
+        if has_platform and var is None:
+            return '%s/assemblies/%s/design/platforms/%s/variables' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name']
+            )
+        if has_platform and var is not None:
+            return '%s/assemblies/%s/design/platforms/%s/variables/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+                var['name']
+            )
+        if not has_platform and var is None:
+            return '%s/assemblies/%s/design/variables' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+            )
+        if not has_platform and var is not None:
+            return '%s/assemblies/%s/design/variables/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                var['name']
+            )
+
     @staticmethod
     def all(module):
         resp, info = fetch_oneops_api(
             module,
             method='GET',
-            uri='%s/assemblies/%s/design/platforms/%s/variables' % (
-                module.params['organization'],
-                module.params['assembly']['name'],
-                module.params['platform']['name'],
-            )
+            uri=OneOpsDesignVariable.get_uri(module),
         )
         return json.loads(resp.read())
 
@@ -265,12 +289,7 @@ class OneOpsPlatformVariable:
         resp, info = fetch_oneops_api(
             module,
             method='GET',
-            uri='%s/assemblies/%s/design/platforms/%s/variables/%s' % (
-                module.params['organization'],
-                module.params['assembly']['name'],
-                module.params['platform']['name'],
-                variable['name'],
-            )
+            uri=OneOpsDesignVariable.get_uri(module, variable),
         )
         return json.loads(resp.read())
 
@@ -279,12 +298,7 @@ class OneOpsPlatformVariable:
         resp, info = fetch_oneops_api(
             module,
             method='GET',
-            uri='%s/assemblies/%s/design/platforms/%s/variables/%s' % (
-                module.params['organization'],
-                module.params['assembly']['name'],
-                module.params['platform']['name'],
-                variable['name'],
-            )
+            uri=OneOpsDesignVariable.get_uri(module, variable),
         )
         return info['status'] == 200
 
@@ -308,15 +322,11 @@ class OneOpsPlatformVariable:
         resp, info = fetch_oneops_api(
             module,
             method='POST',
-            uri='%s/assemblies/%s/design/platforms/%s/variables' % (
-                module.params['organization'],
-                module.params['assembly']['name'],
-                module.params['platform']['name'],
-            ),
+            uri=OneOpsDesignVariable.get_uri(module),
             json={
                 'cms_dj_ci': {
                     'ciName': variable['name'],
-                    'ciAttributes': OneOpsPlatformVariable.build_variable_attr(variable),
+                    'ciAttributes': OneOpsDesignVariable.build_variable_attr(variable),
                 },
             },
         )
@@ -327,15 +337,10 @@ class OneOpsPlatformVariable:
         resp, info = fetch_oneops_api(
             module,
             method='PUT',
-            uri='%s/assemblies/%s/design/platforms/%s/variables/%s' % (
-                module.params['organization'],
-                module.params['assembly']['name'],
-                module.params['platform']['name'],
-                variable['name'],
-            ),
+            uri=OneOpsDesignVariable.get_uri(module, variable),
             json={
                 'cms_dj_ci': {
-                    'ciAttributes': OneOpsPlatformVariable.build_variable_attr(variable),
+                    'ciAttributes': OneOpsDesignVariable.build_variable_attr(variable),
                 },
             },
         )
@@ -343,27 +348,22 @@ class OneOpsPlatformVariable:
 
     @staticmethod
     def upsert(module, variable):
-        if OneOpsPlatformVariable.exists(module, variable):
-            return OneOpsPlatformVariable.update(module, variable)
+        if OneOpsDesignVariable.exists(module, variable):
+            return OneOpsDesignVariable.update(module, variable)
         else:
-            return OneOpsPlatformVariable.create(module, variable)
+            return OneOpsDesignVariable.create(module, variable)
 
     @staticmethod
     def delete(module, variable):
         resp, info = fetch_oneops_api(
             module,
             method='DELETE',
-            uri='%s/assemblies/%s/design/platforms/%s/variables/%s' % (
-                module.params['organization'],
-                module.params['assembly']['name'],
-                module.params['platform']['name'],
-                variable['name'],
-            ),
+            uri=OneOpsDesignVariable.get_uri(module, variable),
         )
         return json.loads(resp.read())
 
 
-# end class OneOpsPlatformVariable
+# end class OneOpsDesignVariable
 
 class OneOpsComponent:
 
