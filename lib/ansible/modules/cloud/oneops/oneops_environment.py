@@ -249,6 +249,10 @@ def ensure_environment(module, state):
 def delete_environment(module, state):
     if oneops_api.OneOpsEnvironment.exists(module):
         environment = oneops_api.OneOpsEnvironment.get(module)
+        oneops_api.OneOpsEnvironment.disable(module)
+        if module.params['environment']['deployment'] == 'complete':
+            state = commit_environment_release(module, state)
+            state = deploy_environment_release(module, state)
         oneops_api.OneOpsEnvironment.delete(module)
         state.update(dict(
             changed=True,
