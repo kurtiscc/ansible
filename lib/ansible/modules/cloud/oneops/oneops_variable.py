@@ -8,9 +8,9 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: oneops_platform
+module: oneops_variable
 
-short_description: A module for provisioning a OneOps platform inside of an assembly
+short_description: A module for provisioning a OneOps variable inside of an assembly
 
 version_added: "2.9"
 
@@ -35,46 +35,46 @@ options:
         type: str
     organization:
         description:
-            - The name of the organization to create the platform in
+            - The name of the organization to create the variable in
         required: true
         type: str
     assembly:
         description:
-            - A hash/dictionary of assembly configuration used to add the platform
+            - A hash/dictionary of assembly configuration used to add the variable
         required: true
         type: dict
         suboptions:
             name:
                 description:
-                    - A name for the assembly the platform will be under
+                    - A name for the assembly the variable will be under
                 required: true
                 type: str
-    platform:
+    variable:
         description:
-            - A hash/dictionary of platform configuration used to create the platform
+            - A hash/dictionary of variable configuration used to create the variable
         required: true
         type: dict
         suboptions:
             name:
                 description:
-                    - A name for the platform
+                    - A name for the variable
                 required: true
                 type: str
             comments:
                 description:
-                    - Comments for your platform. Visible in the OneOps UI
+                    - Comments for your variable. Visible in the OneOps UI
                 required: false
                 type: str
-                default: "This platform created by the OneOps Ansible module"
+                default: "This variable created by the OneOps Ansible module"
             description:
                 description:
-                    - A useful description for your platform
+                    - A useful description for your variable
                 required: false
                 type: str
-                default: "This platform created by the OneOps Ansible module"
+                default: "This variable created by the OneOps Ansible module"
             pack:
                 description:
-                    - A hash/dictionary of platform OneOps pack configuration used to create the platform
+                    - A hash/dictionary of variable OneOps pack configuration used to create the variable
                 required: false
                 type: dict
                 suboptions:
@@ -109,17 +109,17 @@ author:
 '''
 
 EXAMPLES = '''
-# Create a new platform
-- name: Create my-platform in my-org in OneOps
+# Create a new variable
+- name: Create my-variable in my-org in OneOps
   oneops:
     oneops_host: oneops.example.com
     api_key: 12345abcde
     email: sam.walton@walmart.com
     organization: my-organization
-    platform:
-        name: my-platform
-        comments: A comment attached to my platform that can be read in OneOps UI
-        description: A description of my platform
+    variable:
+        name: my-variable
+        comments: A comment attached to my variable that can be read in OneOps UI
+        description: A description of my variable
         pack: 
             source: my-source
             name: my-pack
@@ -128,8 +128,8 @@ EXAMPLES = '''
 '''
 
 RETURN = '''
-platform:
-    description: The platform object from the OneOps API
+variable:
+    description: The variable object from the OneOps API
     returned: when success
     type: complex
 '''
@@ -140,67 +140,49 @@ from ansible.module_utils.oneops import oneops_api
 from ansible.module_utils.common import dict_transformations
 
 
-def get_oneops_platform_module():
+def get_oneops_variable_module():
     return AnsibleModule(
-        argument_spec=module_argument_spec.get_oneops_platform_module_argument_spec(),
+        argument_spec=module_argument_spec.get_oneops_variable_module_argument_spec(),
         supports_check_mode=True,
     )
 
 
-def commit_latest_design_release(module, state):
-    try:
-        release = oneops_api.OneOpsDesignRelease.latest(module)
-    except AttributeError:
-        release = None
+def ensure_variable(module, state):
+    old_variable = dict()
 
-    if release and release['releaseState'] == 'open':
-        state.update(dict(changed=True))
-        oneops_api.OneOpsDesignRelease.commit(module, release['releaseId'])
+    # Get original variable if it exists
+    if oneops_api.OneOpsVariable.exists(module):
+        old_variable = oneops_api.OneOpsVariable.get(module)
 
-    return state
+    # Update and store the variable
+    new_variable = oneops_api.OneOpsVariable.upsert(module)
 
+    # Compare the original vs the new variable
+    diff = dict_transformations.recursive_diff(old_variable, new_variable)
 
-def ensure_platform(module, state):
-    old_platform = dict()
-
-    # Get original platform if it exists
-    if oneops_api.OneOpsPlatform.exists(module):
-        old_platform = oneops_api.OneOpsPlatform.get(module)
-
-    # Update and store the platform
-    new_platform = oneops_api.OneOpsPlatform.upsert(module)
-
-    # We don't need to compare links_to to calculate changed
-    old_platform.pop('links_to', None)
-
-    # Compare the original vs the new platform
-    diff = dict_transformations.recursive_diff(old_platform, new_platform)
-
-    # Collect unreleased changes if platform is was updated
+    # Collect unreleased changes if variable is was updated
     atts_diff = None
-    if new_platform['rfcAction'] == 'update':
-        atts_diff = dict_transformations.recursive_diff(old_platform['ciBaseAttributes'],
-                                                        new_platform['ciBaseAttributes'])
+    if new_variable['rfcAction'] == 'update':
+        atts_diff = dict_transformations.recursive_diff(old_variable['ciBaseAttributes'],
+                                                        new_variable['ciBaseAttributes'])
 
     state.update(dict(
-        # Compare both the platform diff and the atts_diff (if an update)
+        # Compare both the variable diff and the atts_diff (if an update)
         changed=(diff is not None or atts_diff is not None),
-        platform=new_platform,
+        variable=new_variable,
     ))
-
-    state = commit_latest_design_release(module, state)
 
     module.exit_json(**state)
 
 
-def delete_platform(module, state):
-    if oneops_api.OneOpsPlatform.exists(module):
-        platform = oneops_api.OneOpsPlatform.get(module)
-        if platform['rfcAction'] != 'delete':
-            oneops_api.OneOpsPlatform.delete(module)
+def delete_variable(module, state):
+    if oneops_api.OneOpsVariable.exists(module):
+        variable = oneops_api.OneOpsVariable.get(module)
+        if variable['rfcAction'] != 'delete':
+            oneops_api.OneOpsVariable.delete(module)
             state.update(dict(
                 changed=True,
-                platform=platform
+                variable=variable
             ))
 
     module.exit_json(**state)
@@ -214,20 +196,20 @@ def run_module():
     # for consumption, for example, in a subsequent task
     state = dict(
         changed=False,
-        platform=dict(),
+        variable=dict(),
     )
 
     # the AnsibleModule object will be our abstraction working with Ansible
     # this includes instantiation, a couple of common attr would be the
     # args/params passed to the execution, as well as if the module
     # supports check mode
-    module = get_oneops_platform_module()
+    module = get_oneops_variable_module()
 
-    if module.params['platform']['state'] == 'present':
-        return ensure_platform(module, state)
+    if module.params['variable']['state'] == 'present':
+        return ensure_variable(module, state)
 
-    if module.params['platform']['state'] == 'absent':
-        return delete_platform(module, state)
+    if module.params['variable']['state'] == 'absent':
+        return delete_variable(module, state)
 
     # if the user is working with this module in only check mode we do not
     # want to make any changes to the environment, just return the current

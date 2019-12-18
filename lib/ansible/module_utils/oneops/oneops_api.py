@@ -246,33 +246,33 @@ class OneOpsPlatform:
 # end class OneOpsPlatform
 
 
-class OneOpsDesignVariable:
+class OneOpsVariable:
     @staticmethod
-    def get_uri(module, var=None):
-        has_platform = 'platform' in module.params and 'name' in module.params['platform']
-        if has_platform and var is None:
+    def get_uri(module, root_path=True):
+        has_platform = 'platform' in module.params and module.params['platform'] and 'name' in module.params['platform']
+        if has_platform and root_path:
             return '%s/assemblies/%s/design/platforms/%s/variables' % (
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['platform']['name']
             )
-        if has_platform and var is not None:
+        if has_platform and not root_path:
             return '%s/assemblies/%s/design/platforms/%s/variables/%s' % (
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['platform']['name'],
-                var['name']
+                module.params['variable']['name'],
             )
-        if not has_platform and var is None:
+        if not has_platform and root_path:
             return '%s/assemblies/%s/design/variables' % (
                 module.params['organization'],
                 module.params['assembly']['name'],
             )
-        if not has_platform and var is not None:
+        if not has_platform and not root_path:
             return '%s/assemblies/%s/design/variables/%s' % (
                 module.params['organization'],
                 module.params['assembly']['name'],
-                var['name']
+                module.params['variable']['name'],
             )
 
     @staticmethod
@@ -280,85 +280,85 @@ class OneOpsDesignVariable:
         resp, info = fetch_oneops_api(
             module,
             method='GET',
-            uri=OneOpsDesignVariable.get_uri(module),
+            uri=OneOpsVariable.get_uri(module),
         )
         return json.loads(resp.read())
 
     @staticmethod
-    def get(module, variable):
+    def get(module):
         resp, info = fetch_oneops_api(
             module,
             method='GET',
-            uri=OneOpsDesignVariable.get_uri(module, variable),
+            uri=OneOpsVariable.get_uri(module, root_path=False),
         )
         return json.loads(resp.read())
 
     @staticmethod
-    def exists(module, variable):
+    def exists(module):
         resp, info = fetch_oneops_api(
             module,
             method='GET',
-            uri=OneOpsDesignVariable.get_uri(module, variable),
+            uri=OneOpsVariable.get_uri(module, root_path=False),
         )
         return info['status'] == 200
 
     @staticmethod
-    def build_variable_attr(variable):
+    def build_variable_attr(module):
         attr = dict()
-        if variable['secure']:
+        if module.params['variable']['secure']:
             attr.update({
                 'secure': 'true',
-                'encrypted_value': variable['value'],
+                'encrypted_value': module.params['variable']['value'],
             })
         else:
             attr.update({
                 'secure': 'false',
-                'value': variable['value'],
+                'value': module.params['variable']['value'],
             })
         return attr
 
     @staticmethod
-    def create(module, variable):
+    def create(module):
         resp, info = fetch_oneops_api(
             module,
             method='POST',
-            uri=OneOpsDesignVariable.get_uri(module),
+            uri=OneOpsVariable.get_uri(module),
             json={
                 'cms_dj_ci': {
-                    'ciName': variable['name'],
-                    'ciAttributes': OneOpsDesignVariable.build_variable_attr(variable),
+                    'ciName': module.params['variable']['name'],
+                    'ciAttributes': OneOpsVariable.build_variable_attr(module),
                 },
             },
         )
         return json.loads(resp.read())
 
     @staticmethod
-    def update(module, variable):
+    def update(module):
         resp, info = fetch_oneops_api(
             module,
             method='PUT',
-            uri=OneOpsDesignVariable.get_uri(module, variable),
+            uri=OneOpsVariable.get_uri(module, root_path=False),
             json={
                 'cms_dj_ci': {
-                    'ciAttributes': OneOpsDesignVariable.build_variable_attr(variable),
+                    'ciAttributes': OneOpsVariable.build_variable_attr(module),
                 },
             },
         )
         return json.loads(resp.read())
 
     @staticmethod
-    def upsert(module, variable):
-        if OneOpsDesignVariable.exists(module, variable):
-            return OneOpsDesignVariable.update(module, variable)
+    def upsert(module):
+        if OneOpsVariable.exists(module):
+            return OneOpsVariable.update(module)
         else:
-            return OneOpsDesignVariable.create(module, variable)
+            return OneOpsVariable.create(module)
 
     @staticmethod
-    def delete(module, variable):
+    def delete(module):
         resp, info = fetch_oneops_api(
             module,
             method='DELETE',
-            uri=OneOpsDesignVariable.get_uri(module, variable),
+            uri=OneOpsVariable.get_uri(module, root_path=False),
         )
         return json.loads(resp.read())
 
