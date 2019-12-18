@@ -246,6 +246,125 @@ class OneOpsPlatform:
 # end class OneOpsPlatform
 
 
+class OneOpsPlatformVariable:
+    @staticmethod
+    def all(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method='GET',
+            uri='%s/assemblies/%s/design/platforms/%s/variables' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def get(module, variable):
+        resp, info = fetch_oneops_api(
+            module,
+            method='GET',
+            uri='%s/assemblies/%s/design/platforms/%s/variables/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+                variable['name'],
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def exists(module, variable):
+        resp, info = fetch_oneops_api(
+            module,
+            method='GET',
+            uri='%s/assemblies/%s/design/platforms/%s/variables/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+                variable['name'],
+            )
+        )
+        return info['status'] == 200
+
+    @staticmethod
+    def build_variable_attr(variable):
+        attr = dict()
+        if variable['secure']:
+            attr.update({
+                'secure': 'true',
+                'encrypted_value': variable['value'],
+            })
+        else:
+            attr.update({
+                'secure': 'false',
+                'value': variable['value'],
+            })
+        return attr
+
+    @staticmethod
+    def create(module, variable):
+        resp, info = fetch_oneops_api(
+            module,
+            method='POST',
+            uri='%s/assemblies/%s/design/platforms/%s/variables' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+            ),
+            json={
+                'cms_dj_ci': {
+                    'ciName': variable['name'],
+                    'ciAttributes': OneOpsPlatformVariable.build_variable_attr(variable),
+                },
+            },
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def update(module, variable):
+        resp, info = fetch_oneops_api(
+            module,
+            method='PUT',
+            uri='%s/assemblies/%s/design/platforms/%s/variables/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+                variable['name'],
+            ),
+            json={
+                'cms_dj_ci': {
+                    'ciAttributes': OneOpsPlatformVariable.build_variable_attr(variable),
+                },
+            },
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def upsert(module, variable):
+        if OneOpsPlatformVariable.exists(module, variable):
+            return OneOpsPlatformVariable.update(module, variable)
+        else:
+            return OneOpsPlatformVariable.create(module, variable)
+
+    @staticmethod
+    def delete(module, variable):
+        resp, info = fetch_oneops_api(
+            module,
+            method='DELETE',
+            uri='%s/assemblies/%s/design/platforms/%s/variables/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+                variable['name'],
+            ),
+        )
+        return json.loads(resp.read())
+
+
+# end class OneOpsPlatformVariable
+
 class OneOpsComponent:
 
     @staticmethod

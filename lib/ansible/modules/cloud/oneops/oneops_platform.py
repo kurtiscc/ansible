@@ -146,6 +146,7 @@ def get_oneops_platform_module():
         supports_check_mode=True,
     )
 
+
 def commit_latest_design_release(module, state):
     try:
         release = oneops_api.OneOpsDesignRelease.latest(module)
@@ -153,10 +154,52 @@ def commit_latest_design_release(module, state):
         release = None
 
     if release and release['releaseState'] == 'open':
-        state.update({'changed': True})
+        state.update(dict(changed=True))
         oneops_api.OneOpsDesignRelease.commit(module, release['releaseId'])
 
     return state
+
+
+def provision_platform_variables(module, state):
+    if oneops_api.OneOpsPlatform.exists(module):
+        all_vars = oneops_api.OneOpsPlatformVariable.all(module)
+        requested_vars = module.params['platform']['variables'] or None
+
+        # Loop over all existing vars and delete unnecessary ones
+        for var in all_vars:
+            # Check to see if the variable is in our module platform params
+            if not requested_vars or not any(v['name'] == var['ciName'] for v in requested_vars):
+                # Delete variable if not in module platform params
+                oneops_api.OneOpsPlatformVariable.delete(module, dict(name=var['ciName']))
+                state.update(dict(changed=True))
+
+        # Loop over all vars passed as module params and upsert them
+        for var in requested_vars:
+            old_var = dict()
+            if oneops_api.OneOpsPlatformVariable.exists(module, var):
+                old_var = oneops_api.OneOpsPlatformVariable.get(module, var)
+
+            # Update and store the var
+            new_var = oneops_api.OneOpsPlatformVariable.upsert(module, var)
+
+            # Compare the original vs the new var
+            diff = dict_transformations.recursive_diff(old_var, new_var)
+
+            # Collect unreleased changes if var is was updated
+            atts_diff = None
+            if new_var['rfcAction'] == 'update':
+                atts_diff = dict_transformations.recursive_diff(old_var['ciBaseAttributes'],
+                                                                new_var['ciBaseAttributes'])
+
+            state.update(dict(
+                # Compare both the platform diff and the atts_diff (if an update)
+                # TODO: Can we detect encrypted value changes?
+                changed=(diff is not None or atts_diff is not None),
+                variables=state['variables'] + [new_var],
+            ))
+
+    return state
+
 
 def ensure_platform(module, state):
     old_platform = dict()
@@ -186,6 +229,7 @@ def ensure_platform(module, state):
         platform=new_platform,
     ))
 
+    state = provision_platform_variables(module, state)
     state = commit_latest_design_release(module, state)
 
     module.exit_json(**state)
@@ -213,6 +257,7 @@ def run_module():
     state = dict(
         changed=False,
         platform=dict(),
+        variables=[],
     )
 
     # the AnsibleModule object will be our abstraction working with Ansible

@@ -48,15 +48,25 @@ def get_oneops_argument_spec_fragment_assembly():
     )
 
 
+def get_oneops_argument_spec_fragment_variables():
+    return dict(
+        variables=dict(type='list', required=False, default=[], elements='dict', options=dict(
+            name=dict(type='str', required=True),
+            value=dict(type='str', required=False, default=''),
+            secure=dict(type='bool', required=False, default=False, choices=[True, False]),
+        ))
+    )
+
+
 def get_oneops_argument_spec_fragment_platform():
     return dict(
-        platform=dict(type='dict', required=True, options=dict(
+        platform=dict(type='dict', required=True, options=merge_dicts({}, (dict(
             name=dict(type='str', required=True),
             comments=dict(type='str', required=False, default="This platform created by the OneOps Ansible module"),
             description=dict(type='str', required=False, default="This platform created by the OneOps Ansible module"),
             attr=dict(type='dict', required=False, default=dict()),
             state=dict(type='str', default='present', choices=['present', 'absent']),
-        ))
+        ), get_oneops_argument_spec_fragment_variables())))
     )
 
 
