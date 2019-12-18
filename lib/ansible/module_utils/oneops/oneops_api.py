@@ -2,11 +2,22 @@ import json
 import time
 
 from ansible.module_utils import urls
+from ansible.module_utils.six.moves.urllib.parse import urlencode
 from ansible.module_utils.oneops import module_argument_spec
 
 
-def fetch_oneops_api(module, uri='/', method='GET', data=None, json=None, headers={}):
+def fetch_oneops_api(module, uri='/', method='GET', data=None, json=None, headers={}, query_params=None):
+    def format_querystring(params=None):
+        if not params:
+            return ""
+
+        return urlencode(params)
+
+    query_string = format_querystring(query_params)
+
     url = 'https://%s/%s' % (module.params['oneops_host'], uri.lstrip('/'))
+    if query_string != "":
+        url = url + "?" + query_string
 
     if not data and json:
         data = module.jsonify(json)
@@ -512,7 +523,7 @@ class OneOpsEnvironment:
             'ciAttributes': module_argument_spec.merge_dicts({}, (
                 {'description': module.params['environment']['description']},
                 module.params['environment']['attr']),
-            ),
+                                                             ),
         }))
 
         del cms_ci['ciClassName']
@@ -636,7 +647,10 @@ class OneOpsEnvironment:
         return json.loads(resp.read())
 
     @staticmethod
-    def enable(module):
+    def enable(module, platform_ids=None):
+        query_params = None
+        if platform_ids:
+            query_params = list(map(lambda platform_id: ('platformCiIds[]', platform_id), platform_ids))
         resp, info = fetch_oneops_api(
             module,
             method="PUT",
@@ -644,12 +658,13 @@ class OneOpsEnvironment:
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['environment']['name']
-            )
+            ),
+            query_params=query_params
         )
         return json.loads(resp.read())
 
     @staticmethod
-    def disable(module):
+    def disable(module, platform_ids=None):
         resp, info = fetch_oneops_api(
             module,
             method="PUT",
@@ -657,7 +672,8 @@ class OneOpsEnvironment:
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['environment']['name']
-            )
+            ),
+            query_params={'platformCiIds[]': platform_ids} if platform_ids else None
         )
         return json.loads(resp.read())
 
@@ -864,4 +880,79 @@ class OneOpsEnvironmentDeployment:
             module.log(msg='Waiting for deployment...')
             time.sleep(5)
 
+
 # end class OneOpsEnvironmentDeployment
+
+
+class OneOpsTransitionPlatform:
+
+    @staticmethod
+    def all(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/transition/environments/%s/platforms' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def get(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/transition/environments/%s/platforms/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+            )
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def exists(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/transition/environments/%s/platforms/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+            )
+        )
+        return info['status'] == 200
+
+    @staticmethod
+    def update(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="PUT",
+            uri='%s/assemblies/%s/transition/environments/%s/platforms/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+            ),
+            json={
+
+            }
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def toggle(module):
+        platform = OneOpsTransitionPlatform.get(module)
+        OneOpsEnvironment.disable(module, platform_ids=[platform['ciId']])
+
+    @staticmethod
+    def enable(module):
+        platform = OneOpsTransitionPlatform.get(module)
+        OneOpsEnvironment.enable(module, platform_ids=[platform['ciId']])
+
+
+# end class OneOpsTransitionPlatform

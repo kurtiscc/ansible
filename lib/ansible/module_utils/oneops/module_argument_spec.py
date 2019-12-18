@@ -91,6 +91,15 @@ def get_oneops_argument_spec_fragment_environment():
     )
 
 
+def get_oneops_argument_spec_fragment_transition_platform():
+    return dict(
+        platform=dict(type='dict', required=True, options=dict(
+            name=dict(type='str', required=True),
+            state=dict(type='str', default='present', choices=['enabled', 'disabled']),
+        ))
+    )
+
+
 def get_oneops_module_argument_spec():
     return merge_dicts(dict(), (
         get_oneops_argument_spec_fragment_base()
@@ -130,4 +139,14 @@ def get_oneops_environment_module_argument_spec():
         get_oneops_argument_spec_fragment_organization(),
         get_oneops_argument_spec_fragment_assembly(),
         get_oneops_argument_spec_fragment_environment(),
+    ))
+
+
+def get_oneops_transition_platform_module_argument_spec():
+    return merge_dicts(dict(), (
+        get_oneops_argument_spec_fragment_base(),
+        get_oneops_argument_spec_fragment_organization(),
+        get_oneops_argument_spec_fragment_assembly(),
+        get_oneops_argument_spec_fragment_environment(),
+        get_oneops_argument_spec_fragment_transition_platform(),
     ))
