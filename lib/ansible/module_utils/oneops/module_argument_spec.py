@@ -83,6 +83,15 @@ def get_oneops_argument_spec_fragment_component():
     )
 
 
+def get_oneops_argument_spec_fragment_release():
+    return dict(
+        release=dict(type='dict', required=True, options=dict(
+            description=dict(type='str', required=False, default='This release comitted by OneOps Ansible module'),
+            state=dict(type='str', default='closed', choices=['closed', 'discarded']),
+        ))
+    )
+
+
 def get_oneops_argument_spec_fragment_environment():
     return dict(
         environment=dict(type='dict', required=True, options=dict(
@@ -90,6 +99,7 @@ def get_oneops_argument_spec_fragment_environment():
             comments=dict(type='str', required=False, default="This environment created by the OneOps Ansible module"),
             description=dict(type='str', required=False,
                              default="This environment created by the OneOps Ansible module"),
+            pull_design=dict(type='bool', required=False, default=False, choices=[True, False]),
             clouds=dict(type='list', required=False, elements='dict', options=dict(
                 name=dict(type='str', required=True),
                 priority=dict(type='int', required=False, default=1, choices=[1, 2]),
@@ -97,7 +107,6 @@ def get_oneops_argument_spec_fragment_environment():
                 pct_scale=dict(type='int', required=False, default=100),
             ), default=[]),
             attr=dict(type='dict', required=False, default=dict()),
-            deployment=dict(type='str', default='complete', choices=['complete']),
             state=dict(type='str', default='present', choices=['present', 'absent']),
         ))
     )
@@ -118,6 +127,18 @@ def get_oneops_argument_spec_fragment_transition_component():
             name=dict(type='str', required=True),
             attr=dict(type='dict', required=False, default=dict()),
             state=dict(type='str', required=False, default='updated', choices=['updated', 'touched']),
+        ))
+    )
+
+
+def get_oneops_argument_spec_fragment_transition_release():
+    return dict(
+        release=dict(type='dict', required=True, options=dict(
+            description=dict(type='str', required=False, default='This release comitted by OneOps Ansible module'),
+            snapshot_only=dict(type='bool', required=False, default=False, choices=[True, False]),
+            excluded_platforms=dict(type='list', required=False, default=[], elements='dict',
+                                   options=get_oneops_argument_spec_fragment_platform()['platform']['options']),
+            state=dict(type='str', default='closed', choices=['closed', 'discarded']),
         ))
     )
 
@@ -165,6 +186,15 @@ def get_oneops_component_module_argument_spec():
     ))
 
 
+def get_oneops_release_module_argument_spec():
+    return merge_dicts(dict(), (
+        get_oneops_argument_spec_fragment_base(),
+        get_oneops_argument_spec_fragment_organization(),
+        get_oneops_argument_spec_fragment_assembly(),
+        get_oneops_argument_spec_fragment_release(),
+    ))
+
+
 def get_oneops_environment_module_argument_spec():
     return merge_dicts(dict(), (
         get_oneops_argument_spec_fragment_base(),
@@ -192,4 +222,14 @@ def get_oneops_transition_component_module_argument_spec():
         get_oneops_argument_spec_fragment_environment(),
         get_oneops_argument_spec_fragment_transition_platform(),
         get_oneops_argument_spec_fragment_transition_component(),
+    ))
+
+
+def get_oneops_transition_release_module_argument_spec():
+    return merge_dicts(dict(), (
+        get_oneops_argument_spec_fragment_base(),
+        get_oneops_argument_spec_fragment_organization(),
+        get_oneops_argument_spec_fragment_assembly(),
+        get_oneops_argument_spec_fragment_environment(),
+        get_oneops_argument_spec_fragment_transition_release(),
     ))

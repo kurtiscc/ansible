@@ -174,8 +174,6 @@ environment:
     type: complex
 '''
 
-import time
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.oneops import module_argument_spec
 from ansible.module_utils.oneops import oneops_api
@@ -189,34 +187,16 @@ def get_oneops_environment_module():
     )
 
 
-def commit_environment_release(module, state):
-    if oneops_api.OneOpsEnvironmentRelease.latest(module)['releaseState'] == 'open':
-        state.update({'changed': True})
-        commit_result = oneops_api.OneOpsEnvironment.commit(module)
-        while commit_result and commit_result['ciState'] == 'locked':
-            time.sleep(5)
-            commit_result = oneops_api.OneOpsEnvironment.get(module)
-
-    return state
-
-
-def deploy_environment_release(module, state):
-    try:
-        bom = oneops_api.OneOpsEnvironmentRelease.bom(module)
-    except AttributeError:
-        bom = None
-
-    release = oneops_api.OneOpsEnvironmentRelease.latest(module)
-    if release and 'releaseState' in release and release['releaseState'] == 'closed':
-        env = oneops_api.OneOpsEnvironment.get(module)
-        if env and 'commit' in env:
-            bom = oneops_api.OneOpsEnvironmentRelease.bom(module)
-
-    if bom and 'releaseState' in bom and bom[
-        'releaseState'] == 'open' and not oneops_api.OneOpsEnvironmentDeployment.has_active_or_pending(module):
-        state.update({'changed': True})
-        oneops_api.OneOpsEnvironmentDeployment.create(module, bom)
-        oneops_api.OneOpsEnvironmentDeployment.wait_for_completion(module)
+def pull_design(module, state):
+    if oneops_api.OneOpsEnvironment.exists(module):
+        latest_transition_release = oneops_api.OneOpsEnvironmentRelease.latest(module)
+        latest_design_release = oneops_api.OneOpsRelease.latest(module)
+        if latest_transition_release \
+                and latest_design_release \
+                and not latest_transition_release['releaseState'] == 'open' \
+                and not latest_transition_release['parentReleaseId'] == latest_design_release['releaseId']:
+            oneops_api.OneOpsEnvironment.pull_design(module)
+            state.update(dict(changed=True))
 
     return state
 
@@ -233,9 +213,6 @@ def ensure_environment(module, state):
 
     # Compare the original vs the new environment
     diff = dict_transformations.recursive_diff(old_environment, new_environment)
-    if module.params['environment']['deployment'] == 'complete':
-        state = commit_environment_release(module, state)
-        state = deploy_environment_release(module, state)
 
     state.update(dict(
         # Compare the environment diff
@@ -243,16 +220,15 @@ def ensure_environment(module, state):
         environment=new_environment,
     ))
 
+    if module.params['environment']['pull_design']:
+        state = pull_design(module, state)
+
     module.exit_json(**state)
 
 
 def delete_environment(module, state):
     if oneops_api.OneOpsEnvironment.exists(module):
         environment = oneops_api.OneOpsEnvironment.get(module)
-        oneops_api.OneOpsEnvironment.disable(module)
-        if module.params['environment']['deployment'] == 'complete':
-            state = commit_environment_release(module, state)
-            state = deploy_environment_release(module, state)
         oneops_api.OneOpsEnvironment.delete(module)
         state.update(dict(
             changed=True,

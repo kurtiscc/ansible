@@ -147,6 +147,19 @@ def get_oneops_variable_module():
     )
 
 
+def commit_latest_design_release(module, state):
+    try:
+        release = oneops_api.OneOpsRelease.latest(module)
+    except AttributeError:
+        release = None
+
+    if release and release['releaseState'] == 'open':
+        state.update(dict(changed=True))
+        oneops_api.OneOpsRelease.commit(module, release['releaseId'])
+
+    return state
+
+
 def ensure_variable(module, state):
     old_variable = dict()
 
@@ -172,6 +185,8 @@ def ensure_variable(module, state):
         variable=new_variable,
     ))
 
+    state = commit_latest_design_release(module, state)
+
     module.exit_json(**state)
 
 
@@ -184,6 +199,8 @@ def delete_variable(module, state):
                 changed=True,
                 variable=variable
             ))
+
+    state = commit_latest_design_release(module, state)
 
     module.exit_json(**state)
 

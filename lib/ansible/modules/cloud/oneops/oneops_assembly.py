@@ -103,13 +103,13 @@ def get_oneops_assembly_module():
 
 def commit_latest_design_release(module, state):
     try:
-        release = oneops_api.OneOpsDesignRelease.latest(module)
+        release = oneops_api.OneOpsRelease.latest(module)
     except AttributeError:
         release = None
 
     if release and release['releaseState'] == 'open':
         state.update(dict(changed=True))
-        oneops_api.OneOpsDesignRelease.commit(module, release['releaseId'])
+        oneops_api.OneOpsRelease.commit(module, release['releaseId'])
 
     return state
 

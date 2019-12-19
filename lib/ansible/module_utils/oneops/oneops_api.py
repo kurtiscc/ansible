@@ -486,7 +486,7 @@ class OneOpsComponent:
 
 # end class OneOpsComponent
 
-class OneOpsDesignRelease:
+class OneOpsRelease:
 
     @staticmethod
     def all(module):
@@ -535,9 +535,7 @@ class OneOpsDesignRelease:
                 module.params['assembly']['name'],
                 release
             ),
-            json={
-                'desc': 'This release comitted by OneOps Ansible module'
-            }
+            json={'desc': module.params['release']['description']}
         )
         return json.loads(resp.read())
 
@@ -746,9 +744,7 @@ class OneOpsEnvironment:
                 module.params['assembly']['name'],
                 module.params['environment']['name']
             ),
-            json={
-                'desc': 'This release comitted by OneOps Ansible module'
-            }
+            json={'desc': module.params['release']['description']},
         )
         return json.loads(resp.read())
 
@@ -784,6 +780,9 @@ class OneOpsEnvironment:
 
     @staticmethod
     def disable(module, platform_ids=None):
+        query_params = None
+        if platform_ids:
+            query_params = list(map(lambda platform_id: ('platformCiIds[]', platform_id), platform_ids))
         resp, info = fetch_oneops_api(
             module,
             method="PUT",
@@ -792,7 +791,7 @@ class OneOpsEnvironment:
                 module.params['assembly']['name'],
                 module.params['environment']['name']
             ),
-            query_params={'platformCiIds[]': platform_ids} if platform_ids else None
+            query_params=query_params
         )
         return json.loads(resp.read())
 
@@ -930,7 +929,25 @@ class OneOpsEnvironmentDeployment:
         return data
 
     @staticmethod
+    def bom(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/transition/environments/%s/deployments/bom' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+            )
+        )
+        data = json.loads(resp.read())
+        return data
+
+    @staticmethod
     def create(module, release):
+        excluded_platform_ids = list(
+            map(lambda platform: OneOpsTransitionPlatform.get(
+                module_argument_spec.merge_dicts({}, (module.params, {'platform': {'name': platform}})))['ciId'],
+                module.params['deployment']['excluded_platforms']))
         resp, info = fetch_oneops_api(
             module,
             method="POST",
@@ -940,8 +957,8 @@ class OneOpsEnvironmentDeployment:
                 module.params['environment']['name'],
             ),
             json={
+                'exclude_platforms': excluded_platform_ids,
                 'cms_deployment': {
-                    'releaseId': release['releaseId'],
                     'nsPath': release['nsPath'],
                 }
             }
@@ -1070,6 +1087,11 @@ class OneOpsTransitionPlatform:
     def enable(module):
         platform = OneOpsTransitionPlatform.get(module)
         OneOpsEnvironment.enable(module, platform_ids=[platform['ciId']])
+
+    @staticmethod
+    def disable(module):
+        platform = OneOpsTransitionPlatform.get(module)
+        OneOpsEnvironment.disable(module, platform_ids=[platform['ciId']])
 
 
 # end class OneOpsTransitionPlatform
