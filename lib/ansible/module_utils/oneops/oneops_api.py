@@ -756,8 +756,8 @@ class OneOpsEnvironment:
             uri='%s/assemblies/%s/transition/environments/%s/discard' % (
                 module.params['organization'],
                 module.params['assembly']['name'],
-                module.params['environment']['name']
-            )
+                module.params['environment']['name'],
+            ),
         )
         return json.loads(resp.read())
 
@@ -772,9 +772,9 @@ class OneOpsEnvironment:
             uri='%s/assemblies/%s/transition/environments/%s/enable' % (
                 module.params['organization'],
                 module.params['assembly']['name'],
-                module.params['environment']['name']
+                module.params['environment']['name'],
             ),
-            query_params=query_params
+            query_params=query_params,
         )
         return json.loads(resp.read())
 
@@ -791,7 +791,7 @@ class OneOpsEnvironment:
                 module.params['assembly']['name'],
                 module.params['environment']['name']
             ),
-            query_params=query_params
+            query_params=query_params,
         )
         return json.loads(resp.read())
 
@@ -809,7 +809,7 @@ class OneOpsEnvironmentRelease:
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['environment']['name'],
-            )
+            ),
         )
 
         return json.loads(resp.read())
@@ -823,8 +823,8 @@ class OneOpsEnvironmentRelease:
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['environment']['name'],
-                release
-            )
+                release,
+            ),
         )
         return json.loads(resp.read())
 
@@ -837,7 +837,7 @@ class OneOpsEnvironmentRelease:
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['environment']['name'],
-            )
+            ),
         )
         return json.loads(resp.read())
 
@@ -850,8 +850,8 @@ class OneOpsEnvironmentRelease:
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['environment']['name'],
-                release
-            )
+                release,
+            ),
         )
         return info['status'] == 200
 
@@ -864,7 +864,7 @@ class OneOpsEnvironmentRelease:
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['environment']['name'],
-            )
+            ),
         )
         return json.loads(resp.read())
 
@@ -877,8 +877,8 @@ class OneOpsEnvironmentRelease:
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['environment']['name'],
-                release
-            )
+                release,
+            ),
         )
         return json.loads(resp.read())
 
@@ -896,12 +896,12 @@ class OneOpsEnvironmentDeployment:
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['environment']['name'],
-            )
+            ),
         )
         return json.loads(resp.read())
 
     @staticmethod
-    def get(module, deployment):
+    def get(module, deployment_id):
         resp, info = fetch_oneops_api(
             module,
             method="GET",
@@ -909,8 +909,8 @@ class OneOpsEnvironmentDeployment:
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['environment']['name'],
-                deployment
-            )
+                deployment_id,
+            ),
         )
         return json.loads(resp.read())
 
@@ -923,7 +923,7 @@ class OneOpsEnvironmentDeployment:
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['environment']['name'],
-            )
+            ),
         )
         data = json.loads(resp.read())
         return data
@@ -937,17 +937,13 @@ class OneOpsEnvironmentDeployment:
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['environment']['name'],
-            )
+            ),
         )
         data = json.loads(resp.read())
         return data
 
     @staticmethod
     def create(module, release):
-        excluded_platform_ids = list(
-            map(lambda platform: OneOpsTransitionPlatform.get(
-                module_argument_spec.merge_dicts({}, (module.params, {'platform': {'name': platform}})))['ciId'],
-                module.params['deployment']['excluded_platforms']))
         resp, info = fetch_oneops_api(
             module,
             method="POST",
@@ -957,17 +953,16 @@ class OneOpsEnvironmentDeployment:
                 module.params['environment']['name'],
             ),
             json={
-                'exclude_platforms': excluded_platform_ids,
                 'cms_deployment': {
+                    'comments': module.params['deployment']['comments'],
                     'nsPath': release['nsPath'],
-                }
-            }
+                },
+            },
         )
-        data = json.loads(resp.read())
-        return data
+        return json.loads(resp.read())
 
     @staticmethod
-    def update(module, deployment, release, state):
+    def update(module, deployment, state):
         resp, info = fetch_oneops_api(
             module,
             method="POST",
@@ -975,46 +970,31 @@ class OneOpsEnvironmentDeployment:
                 module.params['organization'],
                 module.params['assembly']['name'],
                 module.params['environment']['name'],
-                deployment
+                deployment['deploymentId'],
             ),
             json={
                 'cms_deployment': {
-                    'releaseId': release,
-                    'deploymentState': state
-                }
-            }
+                    'deploymentState': state,
+                },
+            },
         )
         return json.loads(resp.read())
 
     @staticmethod
-    def cancel(module, deployment, release):
-        OneOpsEnvironmentDeployment.update(module, deployment, release, 'canceled')
+    def cancel(module, deployment):
+        OneOpsEnvironmentDeployment.update(module, deployment, 'canceled')
 
     @staticmethod
-    def retry(module, deployment, release):
-        OneOpsEnvironmentDeployment.update(module, deployment, release, 'active')
+    def retry(module, deployment):
+        OneOpsEnvironmentDeployment.update(module, deployment, 'active')
 
     @staticmethod
-    def pause(module, deployment, release):
-        OneOpsEnvironmentDeployment.update(module, deployment, release, 'paused')
+    def pause(module, deployment):
+        OneOpsEnvironmentDeployment.update(module, deployment, 'paused')
 
     @staticmethod
-    def resume(module, deployment, release):
-        OneOpsEnvironmentDeployment.update(module, deployment, release, 'active')
-
-    @staticmethod
-    def has_active_or_pending(module):
-        try:
-            deployment = OneOpsEnvironmentDeployment.latest(module)
-            return deployment["deploymentState"] == "active" or deployment["deploymentState"] == "pending"
-        except AttributeError:
-            return False
-
-    @staticmethod
-    def wait_for_completion(module):
-        while OneOpsEnvironmentDeployment.has_active_or_pending(module):
-            module.log(msg='Waiting for deployment...')
-            time.sleep(5)
+    def resume(module, deployment):
+        OneOpsEnvironmentDeployment.update(module, deployment, 'active')
 
 
 # end class OneOpsEnvironmentDeployment

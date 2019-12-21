@@ -143,6 +143,15 @@ def get_oneops_argument_spec_fragment_transition_release():
     )
 
 
+def get_oneops_argument_spec_fragment_transition_deployment():
+    return dict(
+        deployment=dict(type='dict', required=True, options=dict(
+            comments=dict(type='str', required=False, default='This deployment created by OneOps Ansible module'),
+            state=dict(type='str', default='completed', choices=['completed']),
+        ))
+    )
+
+
 def get_oneops_module_argument_spec():
     return merge_dicts(dict(), (
         get_oneops_argument_spec_fragment_base()
@@ -232,4 +241,15 @@ def get_oneops_transition_release_module_argument_spec():
         get_oneops_argument_spec_fragment_assembly(),
         get_oneops_argument_spec_fragment_environment(),
         get_oneops_argument_spec_fragment_transition_release(),
+    ))
+
+
+
+def get_oneops_transition_deployment_module_argument_spec():
+    return merge_dicts(dict(), (
+        get_oneops_argument_spec_fragment_base(),
+        get_oneops_argument_spec_fragment_organization(),
+        get_oneops_argument_spec_fragment_assembly(),
+        get_oneops_argument_spec_fragment_environment(),
+        get_oneops_argument_spec_fragment_transition_deployment(),
     ))
