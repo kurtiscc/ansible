@@ -1,0 +1,5 @@
+**
+!Dockerfile*
+!lib/ansible/modules/cloud/oneops
+!lib/ansible/module_utils/oneops
+!oneops_testing/

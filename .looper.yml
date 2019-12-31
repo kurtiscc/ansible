@@ -1,0 +1,8 @@
+flows:
+  default:
+    - node(docker-daemon):
+      - dockerImage:
+          tags:
+            - docker.prod.walmart.com/atb000k/concord-ansible-oneops:latest
+          push: true
+          dockerfile: Dockerfile
