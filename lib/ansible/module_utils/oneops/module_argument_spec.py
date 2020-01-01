@@ -71,12 +71,24 @@ def get_oneops_argument_spec_fragment_variable():
     )
 
 
-def get_oneops_argument_spec_fragment_component():
+def get_oneops_argument_spec_fragment_component(template_required=True):
     return dict(
         component=dict(type='dict', required=True, options=dict(
             name=dict(type='str', required=True),
-            template_name=dict(type='str', required=True),
+            template_name=dict(type='str', required=template_required),
             comments=dict(type='str', required=False, default="This component created by the OneOps Ansible module"),
+            attr=dict(type='dict', required=False, default=dict()),
+            state=dict(type='str', default='present', choices=['present', 'absent']),
+        ))
+    )
+
+
+def get_oneops_argument_spec_fragment_attachment():
+    return dict(
+        attachment=dict(type='dict', required=True, options=dict(
+            name=dict(type='str', required=True),
+            comments=dict(type='str', required=False, default="This attachment created by the OneOps Ansible module"),
+            exec_order=dict(type='int', required=False, default=0),
             attr=dict(type='dict', required=False, default=dict()),
             state=dict(type='str', default='present', choices=['present', 'absent']),
         ))
@@ -192,6 +204,17 @@ def get_oneops_component_module_argument_spec():
         get_oneops_argument_spec_fragment_assembly(),
         get_oneops_argument_spec_fragment_platform(),
         get_oneops_argument_spec_fragment_component(),
+    ))
+
+
+def get_oneops_attachment_module_argument_spec():
+    return merge_dicts(dict(), (
+        get_oneops_argument_spec_fragment_base(),
+        get_oneops_argument_spec_fragment_organization(),
+        get_oneops_argument_spec_fragment_assembly(),
+        get_oneops_argument_spec_fragment_platform(),
+        get_oneops_argument_spec_fragment_component(template_required=False),
+        get_oneops_argument_spec_fragment_attachment(),
     ))
 
 

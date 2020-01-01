@@ -486,6 +486,141 @@ class OneOpsComponent:
 
 # end class OneOpsComponent
 
+class OneOpsAttachment:
+
+    @staticmethod
+    def all(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/design/platforms/%s/components/%s/attachments' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+            ),
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def get(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/design/platforms/%s/components/%s/attachments/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+                module.params['attachment']['name'],
+            ),
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def exists(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/design/platforms/%s/components/%s/attachments/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+                module.params['attachment']['name'],
+            ),
+        )
+        return info['status'] == 200
+
+
+    @staticmethod
+    def create(module):
+        # You can hit `%s/assemblies/%s/design/platforms/%s/components/%s/attachments/new.json` to get the default json for an attachment
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/design/platforms/%s/components/%s/attachments/new.json' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+            ),
+        )
+        defaults = json.loads(resp.read())
+
+        cms_dj_ci = module_argument_spec.merge_dicts({}, (defaults, {
+            'ciName': module.params['attachment']['name'],
+            'comments': module.params['attachment']['comments'],
+            'execOrder': module.params['attachment']['exec_order'],
+            'rfcAction': 'add',
+            'ciAttributes': module_argument_spec.merge_dicts({}, (module.params['attachment']['attr'])),
+        }))
+
+        resp, info = fetch_oneops_api(
+            module,
+            method="POST",
+            uri='%s/assemblies/%s/design/platforms/%s/components/%s/attachments' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+            ),
+            json={
+                'cms_dj_ci': cms_dj_ci,
+            },
+        )
+        return json.loads(resp.read())
+
+
+    @staticmethod
+    def update(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="PUT",
+            uri='%s/assemblies/%s/design/platforms/%s/components/%s/attachments/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+                module.params['attachment']['name'],
+            ),
+            json={
+                'cms_dj_ci': {
+                    'comments': module.params['attachment']['comments'],
+                    'execOrder': module.params['attachment']['exec_order'],
+                    'ciAttributes': module.params['attachment']['attr'],
+                },
+            },
+        )
+        return json.loads(resp.read())
+
+
+    @staticmethod
+    def upsert(module):
+        if OneOpsAttachment.exists(module):
+            return OneOpsAttachment.update(module)
+        else:
+            return OneOpsAttachment.create(module)
+
+
+    @staticmethod
+    def delete(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="DELETE",
+            uri='%s/assemblies/%s/design/platforms/%s/components/%s/attachments/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+                module.params['attachment']['name'],
+            ),
+        )
+        return json.loads(resp.read())
+
+
+# end class OneOpsAttachment
+
 class OneOpsRelease:
 
     @staticmethod
@@ -498,7 +633,7 @@ class OneOpsRelease:
                 module.params['assembly']['name'],
             )
         )
-        return json.loads(resp.reads())
+        return json.loads(resp.read())
 
     @staticmethod
     def get(module, release):
@@ -1174,3 +1309,4 @@ class OneOpsTransitionComponent:
         return json.loads(resp.read())
 
 # end class OneOpsTransitionComponent
+
