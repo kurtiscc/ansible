@@ -134,10 +134,11 @@ release:
     type: complex
 '''
 
+import time
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.oneops import module_argument_spec
 from ansible.module_utils.oneops import oneops_api
-from ansible.module_utils.common import dict_transformations
 
 
 def get_oneops_release_module():
@@ -147,6 +148,22 @@ def get_oneops_release_module():
     )
 
 
+def wait_for_release_close(module, release):
+    # Check to see if new environment can be made
+    info = None
+    while release and release['releaseState'] == 'open' and info and info.status != 200:
+        release = oneops_api.OneOpsRelease.latest(module)
+        info = oneops_api.fetch_oneops_api(
+            module,
+            uri='%s/assemblies/%s/transition/environments/new.json' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+            ),
+        )
+        time.sleep(5)
+    return release
+
+
 def close_release(module, state):
     try:
         release = oneops_api.OneOpsRelease.latest(module)
@@ -154,8 +171,9 @@ def close_release(module, state):
         release = None
 
     if release and release['releaseState'] == 'open':
-        state.update(dict(changed=True, release=release))
         oneops_api.OneOpsRelease.commit(module, release['releaseId'])
+        release = wait_for_release_close(module, release)
+        state.update(dict(changed=True, release=release))
 
     module.exit_json(**state)
 

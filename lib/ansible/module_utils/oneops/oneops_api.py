@@ -639,8 +639,7 @@ class OneOpsEnvironment:
             'comments': module.params['environment']['comments'],
             'ciAttributes': module_argument_spec.merge_dicts({}, (
                 {'description': module.params['environment']['description']},
-                module.params['environment']['attr']),
-                                                             ),
+                module.params['environment']['attr'])),
         }))
 
         del cms_ci['ciClassName']
