@@ -163,15 +163,14 @@ def get_needed_deployment(module):
 
 
 def wait_for_deployment_completion(module, deployment):
-    while is_deployment_active_or_pending(deployment):
+    while not deployment or "deploymentState" not in deployment or is_deployment_active_or_pending(deployment):
         time.sleep(5)
         deployment = oneops_api.OneOpsEnvironmentDeployment.latest(module)
     return deployment
 
 
 def create_new_deployment_and_wait_for_completion(module, release):
-    oneops_api.OneOpsEnvironmentDeployment.create(module, release)
-    deployment = oneops_api.OneOpsEnvironmentDeployment.latest(module)
+    deployment = oneops_api.OneOpsEnvironmentDeployment.create(module, release)
     deployment = wait_for_deployment_completion(module, deployment)
     return deployment
 
