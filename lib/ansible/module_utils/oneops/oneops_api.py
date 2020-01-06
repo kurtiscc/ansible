@@ -32,7 +32,7 @@ def fetch_oneops_api(module, uri='/', method='GET', data=None, json=None, header
         url_password='',
     ))
 
-    return urls.fetch_url(module=module, url=url, method=method, data=data, headers=headers)
+    return urls.fetch_url(module=module, url=url, method=method, data=data, headers=headers, timeout=30)
 
 
 class OneOpsAssembly:
@@ -1310,3 +1310,100 @@ class OneOpsTransitionComponent:
 
 # end class OneOpsTransitionComponent
 
+class OneOpsTransitionVariable:
+    @staticmethod
+    def get_uri(module, root_path=True):
+        has_platform = 'platform' in module.params and module.params['platform'] and 'name' in module.params['platform']
+        if has_platform and root_path:
+            return '%s/assemblies/%s/transition/environments/%s/platforms/%s/variables' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name']
+            )
+        if has_platform and not root_path:
+            return '%s/assemblies/%s/transition/environments/%s/platforms/%s/variables/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+                module.params['variable']['name'],
+            )
+        if not has_platform and root_path:
+            return '%s/assemblies/%s/transition/environments/%s/variables' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+            )
+        if not has_platform and not root_path:
+            return '%s/assemblies/%s/transition/environments/%s/variables/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['variable']['name'],
+            )
+
+    @staticmethod
+    def all(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method='GET',
+            uri=OneOpsTransitionVariable.get_uri(module),
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def get(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method='GET',
+            uri=OneOpsTransitionVariable.get_uri(module, root_path=False),
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def exists(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method='GET',
+            uri=OneOpsTransitionVariable.get_uri(module, root_path=False),
+        )
+        return info['status'] == 200
+
+    @staticmethod
+    def build_variable_attr(module):
+        attr = dict()
+        if module.params['variable']['secure']:
+            attr.update({
+                'secure': 'true',
+                'encrypted_value': module.params['variable']['value'],
+            })
+        else:
+            attr.update({
+                'secure': 'false',
+                'value': module.params['variable']['value'],
+            })
+        return attr
+
+    @staticmethod
+    def update(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method='PUT',
+            uri=OneOpsTransitionVariable.get_uri(module, root_path=False),
+            json={
+                'cms_dj_ci': {
+                    'ciAttributes': OneOpsTransitionVariable.build_variable_attr(module),
+                },
+            },
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def upsert(module):
+        if OneOpsTransitionVariable.exists(module):
+            return OneOpsTransitionVariable.update(module)
+        # TODO: else throw exception
+
+
+# end class OneOpsTransitionVariable

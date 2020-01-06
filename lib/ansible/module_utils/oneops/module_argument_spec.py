@@ -70,6 +70,15 @@ def get_oneops_argument_spec_fragment_variable():
         ))
     )
 
+def get_oneops_argument_spec_fragment_transition_variable():
+    return dict(
+        variable=dict(type='dict', required=True, options=dict(
+            name=dict(type='str', required=True),
+            value=dict(type='str', required=False, default=''),
+            secure=dict(type='bool', required=False, default=False, choices=[True, False]),
+            state=dict(type='str', default='present', choices=['present']),
+        ))
+    )
 
 def get_oneops_argument_spec_fragment_component(template_required=True):
     return dict(
@@ -124,9 +133,9 @@ def get_oneops_argument_spec_fragment_environment():
     )
 
 
-def get_oneops_argument_spec_fragment_transition_platform():
+def get_oneops_argument_spec_fragment_transition_platform(required=True):
     return dict(
-        platform=dict(type='dict', required=True, options=dict(
+        platform=dict(type='dict', required=required, options=dict(
             name=dict(type='str', required=True),
             state=dict(type='str', default='enabled', choices=['enabled', 'disabled']),
         ))
@@ -194,6 +203,16 @@ def get_oneops_variable_module_argument_spec():
         get_oneops_argument_spec_fragment_assembly(),
         get_oneops_argument_spec_fragment_platform(required=False),
         get_oneops_argument_spec_fragment_variable(),
+    ))
+
+def get_oneops_transition_variable_module_argument_spec():
+    return merge_dicts(dict(), (
+        get_oneops_argument_spec_fragment_base(),
+        get_oneops_argument_spec_fragment_organization(),
+        get_oneops_argument_spec_fragment_assembly(),
+        get_oneops_argument_spec_fragment_environment(),
+        get_oneops_argument_spec_fragment_transition_platform(required=False),
+        get_oneops_argument_spec_fragment_transition_variable(),
     ))
 
 

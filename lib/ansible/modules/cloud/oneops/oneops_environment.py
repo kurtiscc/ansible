@@ -189,12 +189,21 @@ def get_oneops_environment_module():
 
 def pull_design(module, state):
     if oneops_api.OneOpsEnvironment.exists(module):
-        latest_transition_release = oneops_api.OneOpsEnvironmentRelease.latest(module)
+
+        try:
+            latest_transition_release = oneops_api.OneOpsEnvironmentRelease.latest(module)
+        except AttributeError:
+            latest_transition_release = None
+
         latest_design_release = oneops_api.OneOpsRelease.latest(module)
         if latest_transition_release \
                 and latest_design_release \
                 and not latest_transition_release['releaseState'] == 'open' \
                 and not latest_transition_release['parentReleaseId'] == latest_design_release['releaseId']:
+            oneops_api.OneOpsEnvironment.pull_design(module)
+            state.update(dict(changed=True))
+        elif latest_transition_release is None:
+            # TODO: If we get to this case there needs to be some redundancy info specified to the pull design request
             oneops_api.OneOpsEnvironment.pull_design(module)
             state.update(dict(changed=True))
 
