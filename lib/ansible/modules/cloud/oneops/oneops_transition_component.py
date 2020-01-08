@@ -142,22 +142,40 @@ from ansible.module_utils.oneops import oneops_api
 
 def touch_component(module, state):
     if oneops_api.OneOpsTransitionComponent.exists(module):
-        component = oneops_api.OneOpsTransitionComponent.get(module)
+        component, status, errors = oneops_api.OneOpsTransitionComponent.get(module)
+        if not component:
+            module.fail_json(
+                msg='Error fetching existing component %s before touching it' % module.params['component']['name'],
+                status=status, errors=errors)
         state.update(component=component)
 
         # TODO: Figure out why API responds with hint only when querying by component ciId
         if not component['hint'] == 'touch':
             state.update(changed=True)
-            oneops_api.OneOpsTransitionComponent.touch(module)
+            _, status, errors = oneops_api.OneOpsTransitionComponent.touch(module)
+            if errors:
+                module.fail_json(
+                    msg='Error touching existing component %s' % module.params['component']['name'],
+                    status=status, errors=errors)
 
     module.exit_json(**state)
 
 
 def update_component(module, state):
     if oneops_api.OneOpsTransitionComponent.exists(module):
-        old_component = oneops_api.OneOpsTransitionComponent.get(module)
+        old_component, status, errors = oneops_api.OneOpsTransitionComponent.get(module)
+        if not old_component:
+            module.fail_json(
+                msg='Error fetching existing transition component %s before updating it' %
+                    module.params['component']['name'],
+                status=status, errors=errors)
 
-        updated_component = oneops_api.OneOpsTransitionComponent.update(module)
+        updated_component, status, errors = oneops_api.OneOpsTransitionComponent.update(module)
+        if errors:
+            module.fail_json(
+                msg='Error updating existing transition component %s' %
+                    module.params['component']['name'],
+                status=status, errors=errors)
 
         # We don't need to compare dependents or dependsOn to calculate changed
         old_component.pop('dependents', None)

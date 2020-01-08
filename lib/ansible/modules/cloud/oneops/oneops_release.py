@@ -152,7 +152,12 @@ def wait_for_release_close(module, release):
     # Check to see if new environment can be made
     info = None
     while release and release['releaseState'] == 'open' and info and info.status != 200:
-        release = oneops_api.OneOpsRelease.latest(module)
+        release, status, errors = oneops_api.OneOpsRelease.latest(module)
+        if not release:
+            module.fail_json(
+                msg='Error fetching existing release while waiting for it to close in the %s environment' % module.params['environment']['name'],
+                status=status, errors=errors)
+
         info = oneops_api.fetch_oneops_api(
             module,
             uri='%s/assemblies/%s/transition/environments/new.json' % (
@@ -166,12 +171,17 @@ def wait_for_release_close(module, release):
 
 def close_release(module, state):
     try:
-        release = oneops_api.OneOpsRelease.latest(module)
+        release, _, _ = oneops_api.OneOpsRelease.latest(module)
     except AttributeError:
         release = None
 
     if release and release['releaseState'] == 'open':
-        oneops_api.OneOpsRelease.commit(module, release['releaseId'])
+        _, status, errors = oneops_api.OneOpsRelease.commit(module, release['releaseId'])
+        if errors:
+            module.fail_json(
+                msg='Error while closing a release in the %s environment' % module.params['environment']['name'],
+                status=status, errors=errors)
+
         release = wait_for_release_close(module, release)
         state.update(dict(changed=True, release=release))
 
@@ -180,13 +190,17 @@ def close_release(module, state):
 
 def discard_release(module, state):
     try:
-        release = oneops_api.OneOpsRelease.latest(module)
+        release, status, errors = oneops_api.OneOpsRelease.latest(module)
     except AttributeError:
         release = None
 
     if release and release['releaseState'] == 'open':
         state.update(dict(changed=True, release=release))
-        oneops_api.OneOpsRelease.discard(module, release['releaseId'])
+        _, status, errors = oneops_api.OneOpsRelease.discard(module, release['releaseId'])
+        if errors:
+            module.fail_json(
+                msg='Error while discarding a release in the %s environment' % module.params['environment']['name'],
+                status=status, errors=errors)
 
     module.exit_json(**state)
 

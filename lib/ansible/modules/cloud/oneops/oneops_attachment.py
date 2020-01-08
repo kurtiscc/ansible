@@ -152,10 +152,18 @@ def ensure_attachment(module, state):
 
     # Get original attachment if it exists
     if oneops_api.OneOpsAttachment.exists(module):
-        old_attachment = oneops_api.OneOpsAttachment.get(module)
+        old_attachment, status, errors = oneops_api.OneOpsAttachment.get(module)
+        if not old_attachment:
+            module.fail_json(
+                msg='Error fetching existing attachment %s before updating it' % module.params['attachment']['name'],
+                status=status, errors=errors)
 
     # Update and store the attachment
-    new_attachment = oneops_api.OneOpsAttachment.upsert(module)
+    new_attachment, _, _ = oneops_api.OneOpsAttachment.upsert(module)
+    if not new_attachment:
+        module.fail_json(
+            msg='Error creating/updating attachment %s' % module.params['attachment']['name'],
+            status=status, errors=errors)
 
     # Compare the original vs the new attachment
     diff = dict_transformations.recursive_diff(old_attachment, new_attachment)
@@ -171,8 +179,18 @@ def ensure_attachment(module, state):
 
 def delete_attachment(module, state):
     if oneops_api.OneOpsAttachment.exists(module):
-        attachment = oneops_api.OneOpsAttachment.get(module)
-        oneops_api.OneOpsAttachment.delete(module)
+        attachment, status, errors = oneops_api.OneOpsAttachment.get(module)
+        if not attachment:
+            module.fail_json(
+                msg='Error fetching existing attachment %s before deleting it' % module.params['attachment']['name'],
+                status=status, errors=errors)
+
+        _, status, errors = oneops_api.OneOpsAttachment.delete(module)
+        if errors:
+            module.fail_json(
+                msg='Error deleting attachment %s' % module.params['attachment']['name'],
+                status=status, errors=errors)
+
         state.update(dict(
             changed=True,
             attachment=attachment,

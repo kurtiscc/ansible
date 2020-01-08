@@ -152,10 +152,18 @@ def ensure_platform(module, state):
 
     # Get original platform if it exists
     if oneops_api.OneOpsPlatform.exists(module):
-        old_platform = oneops_api.OneOpsPlatform.get(module)
+        old_platform, status, errors = oneops_api.OneOpsPlatform.get(module)
+        if not old_platform:
+            module.fail_json(
+                msg='Error fetching existing platform %s before updating it' % module.params['platform']['name'],
+                status=status, errors=errors)
 
     # Update and store the platform
-    new_platform = oneops_api.OneOpsPlatform.upsert(module)
+    new_platform, status, errors = oneops_api.OneOpsPlatform.upsert(module)
+    if not new_platform:
+        module.fail_json(
+            msg='Error creating/updating platform %s' % module.params['platform']['name'],
+            status=status, errors=errors)
 
     # We don't need to compare links_to to calculate changed
     old_platform.pop('links_to', None)
@@ -180,15 +188,23 @@ def ensure_platform(module, state):
 
 def delete_platform(module, state):
     if oneops_api.OneOpsPlatform.exists(module):
-        platform = oneops_api.OneOpsPlatform.get(module)
+        platform, status, errors = oneops_api.OneOpsPlatform.get(module)
+        if not platform:
+            module.fail_json(
+                msg='Error fetching existing platform %s before deleting it' % module.params['platform']['name'],
+                status=status, errors=errors)
+
         if platform['rfcAction'] != 'delete':
-            oneops_api.OneOpsPlatform.delete(module)
+            _, status, errors = oneops_api.OneOpsPlatform.delete(module)
+            if errors:
+                module.fail_json(
+                    msg='Error deleting existing platform %s' % module.params['platform']['name'],
+                    status=status, errors=errors)
+
             state.update(dict(
                 changed=True,
                 platform=platform
             ))
-
-    state = commit_latest_design_release(module, state)
 
     module.exit_json(**state)
 

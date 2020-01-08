@@ -150,30 +150,44 @@ def get_oneops_transition_release_module():
 
 def close_transition_release(module, state):
     try:
-        release = oneops_api.OneOpsEnvironmentRelease.latest(module)
+        release, _, _ = oneops_api.OneOpsEnvironmentRelease.latest(module)
     except AttributeError:
         release = None
 
     if release and release['releaseState'] == 'open':
         state.update(dict(release=release))
-        commit_result = oneops_api.OneOpsEnvironment.commit(module)
+        commit_result, status, errors = oneops_api.OneOpsEnvironment.commit(module)
+        if not commit_result:
+            module.fail_json(
+                msg='Error closing release in the %s environment' % module.params['environment']['name'],
+                status=status, errors=errors)
+
         state.update(dict(changed=True))
         while commit_result and commit_result['ciState'] == 'locked':
             time.sleep(5)
-            commit_result = oneops_api.OneOpsEnvironment.get(module)
+            commit_result, _, _ = oneops_api.OneOpsEnvironment.get(module)
+            if not commit_result:
+                module.fail_json(
+                    msg='Error fetching environment %s details while closing release' % module.params['environment']['name'],
+                    status=status, errors=errors)
 
     module.exit_json(**state)
 
 
 def discard_transition_release(module, state):
     try:
-        release = oneops_api.OneOpsEnvironmentRelease.latest(module)
+        release, _, _ = oneops_api.OneOpsEnvironmentRelease.latest(module)
     except AttributeError:
         release = None
 
     if release and release['releaseState'] == 'open':
         state.update(dict(release=release))
-        oneops_api.OneOpsEnvironmentRelease.discard(module, release['releaseId'])
+        _, status, errors = oneops_api.OneOpsEnvironmentRelease.discard(module, release['releaseId'])
+        if errors:
+            module.fail_json(
+                msg='Error discarding release in environment %s' % module.params['environment']['name'],
+                status=status, errors=errors)
+
         state.update(dict(changed=True))
 
     module.exit_json(**state)

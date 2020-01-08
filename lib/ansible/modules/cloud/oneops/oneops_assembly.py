@@ -104,8 +104,17 @@ def get_oneops_assembly_module():
 def ensure_assembly(module, state):
     old_assembly = dict()
     if oneops_api.OneOpsAssembly.exists(module):
-        old_assembly = oneops_api.OneOpsAssembly.get(module)
-    new_assembly = oneops_api.OneOpsAssembly.upsert(module)
+        old_assembly, status, errors = oneops_api.OneOpsAssembly.get(module)
+        if not old_assembly:
+            module.fail_json(
+                msg='Error fetching existing assembly %s before updating it' % module.params['assembly']['name'],
+                status=status, errors=errors)
+
+    new_assembly, status, errors = oneops_api.OneOpsAssembly.upsert(module)
+    if not new_assembly:
+        module.fail_json(msg='Error creating/updating assembly %s' % module.params['assembly']['name'], status=status,
+                         errors=errors)
+
     diff = dict_transformations.recursive_diff(old_assembly, new_assembly)
     state.update(dict(
         changed=diff is not None,
@@ -116,8 +125,18 @@ def ensure_assembly(module, state):
 
 def delete_assembly(module, state):
     if oneops_api.OneOpsAssembly.exists(module):
-        assembly = oneops_api.OneOpsAssembly.get(module)
-        oneops_api.OneOpsAssembly.delete(module)
+        assembly, status, errors = oneops_api.OneOpsAssembly.get(module)
+        if not assembly:
+            module.fail_json(
+                msg='Error fetching existing assembly %s before deleting it' % module.params['assembly']['name'],
+                status=status, errors=errors)
+
+        _, status, errors = oneops_api.OneOpsAssembly.delete(module)
+        if errors:
+            module.fail_json(
+                msg='Error deleting assembly %s' % module.params['assembly']['name'],
+                status=status, errors=errors)
+
         state.update(dict(
             changed=True,
             assembly=assembly

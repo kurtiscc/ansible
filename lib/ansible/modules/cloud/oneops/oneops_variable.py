@@ -152,10 +152,18 @@ def ensure_variable(module, state):
 
     # Get original variable if it exists
     if oneops_api.OneOpsVariable.exists(module):
-        old_variable = oneops_api.OneOpsVariable.get(module)
+        old_variable, status, errors = oneops_api.OneOpsVariable.get(module)
+        if not old_variable:
+            module.fail_json(
+                msg='Error fetching existing design variable %s before updating it' % module.params['variable']['name'],
+                status=status, errors=errors)
 
     # Update and store the variable
-    new_variable = oneops_api.OneOpsVariable.upsert(module)
+    new_variable, status, errors = oneops_api.OneOpsVariable.upsert(module)
+    if errors:
+        module.fail_json(
+            msg='Error updating existing design variable %s' % module.params['variable']['name'],
+            status=status, errors=errors)
 
     # Compare the original vs the new variable
     diff = dict_transformations.recursive_diff(old_variable, new_variable)
@@ -177,15 +185,22 @@ def ensure_variable(module, state):
 
 def delete_variable(module, state):
     if oneops_api.OneOpsVariable.exists(module):
-        variable = oneops_api.OneOpsVariable.get(module)
+        variable, status, errors = oneops_api.OneOpsVariable.get(module)
+        if not variable:
+            module.fail_json(
+                msg='Error fetching existing design variable %s before deleting it' % module.params['variable']['name'],
+                status=status, errors=errors)
         if variable['rfcAction'] != 'delete':
-            oneops_api.OneOpsVariable.delete(module)
+            _, status, errors = oneops_api.OneOpsVariable.delete(module)
+            if errors:
+                module.fail_json(
+                    msg='Error deleting design variable %s' % module.params['variable']['name'],
+                    status=status, errors=errors)
+
             state.update(dict(
                 changed=True,
                 variable=variable
             ))
-
-    state = commit_latest_design_release(module, state)
 
     module.exit_json(**state)
 

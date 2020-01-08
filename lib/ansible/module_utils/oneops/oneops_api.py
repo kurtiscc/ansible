@@ -4,6 +4,7 @@ import time
 from ansible.module_utils import urls
 from ansible.module_utils.six.moves.urllib.parse import urlencode
 from ansible.module_utils.oneops import module_argument_spec
+from ansible.module_utils._text import to_text
 
 
 def fetch_oneops_api(module, uri='/', method='GET', data=None, json=None, headers={}, query_params=None):
@@ -35,16 +36,42 @@ def fetch_oneops_api(module, uri='/', method='GET', data=None, json=None, header
     return urls.fetch_url(module=module, url=url, method=method, data=data, headers=headers, timeout=30)
 
 
+def parse_oneops_api_response(module, resp, info):
+    body = None
+    if resp:
+        body = resp.read()
+
+    status_code = info['status']
+
+    if not body:
+        if "body" in info:
+            return json.loads(to_text(info["body"])), status_code
+        module.debug("A OneOps API response contained an empty body. Response Info: %s" % info)
+        return None, status_code
+    try:
+        return json.loads(to_text(body)), status_code
+    except ValueError:
+        module.debug("There was an error parsing a response from the OneOps API. Response Info: %s" % info)
+        return None, status_code
+
+
+def handle_oneops_api_response(module, resp, info):
+    body, status = parse_oneops_api_response(module, resp, info)
+    if status < 200 or status >= 400:
+        errors = body['errors'] if body and 'errors' in body else None
+        return None, status, errors
+    return body, status, None
+
 class OneOpsAssembly:
     @staticmethod
     def all(module):
-        response = fetch_oneops_api(
+        resp, info = fetch_oneops_api(
             module,
             uri='%s/assemblies' % (
                 module.params['organization'],
             )
         )
-        return json.loads(response.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def get(module):
@@ -55,7 +82,7 @@ class OneOpsAssembly:
                 module.params['assembly']['name']
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def exists(module):
@@ -87,7 +114,7 @@ class OneOpsAssembly:
                 }
             }
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def update(module):
@@ -109,7 +136,7 @@ class OneOpsAssembly:
                 }
             }
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def upsert(module):
@@ -128,7 +155,7 @@ class OneOpsAssembly:
                 module.params['assembly']['name']
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
 
 # end class OneOpsAssembly
@@ -145,7 +172,7 @@ class OneOpsPlatform:
                 module.params['assembly']['name'],
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def get(module):
@@ -157,7 +184,7 @@ class OneOpsPlatform:
                 module.params['platform']['name'],
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def exists(module):
@@ -182,7 +209,7 @@ class OneOpsPlatform:
                 module.params['assembly']['name'],
             )
         )
-        defaults = json.loads(resp.read())
+        defaults = handle_oneops_api_response(module, resp, info)
         cms_dj_ci = module_argument_spec.merge_dicts({}, (defaults, {
             'ciName': module.params['platform']['name'],
             'comments': module.params['platform']['comments'],
@@ -199,7 +226,7 @@ class OneOpsPlatform:
             ),
             json={'cms_dj_ci': cms_dj_ci}
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def update(module):
@@ -220,7 +247,7 @@ class OneOpsPlatform:
             ),
             json={'cms_dj_ci': cms_dj_ci}
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def upsert(module):
@@ -240,7 +267,7 @@ class OneOpsPlatform:
                 module.params['platform']['name'],
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
 
 # end class OneOpsPlatform
@@ -282,7 +309,7 @@ class OneOpsVariable:
             method='GET',
             uri=OneOpsVariable.get_uri(module),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def get(module):
@@ -291,7 +318,7 @@ class OneOpsVariable:
             method='GET',
             uri=OneOpsVariable.get_uri(module, root_path=False),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def exists(module):
@@ -330,7 +357,7 @@ class OneOpsVariable:
                 },
             },
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def update(module):
@@ -344,7 +371,7 @@ class OneOpsVariable:
                 },
             },
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def upsert(module):
@@ -360,7 +387,7 @@ class OneOpsVariable:
             method='DELETE',
             uri=OneOpsVariable.get_uri(module, root_path=False),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
 
 # end class OneOpsDesignVariable
@@ -377,7 +404,7 @@ class OneOpsComponent:
                 module.params['platform']['name'],
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def get(module):
@@ -390,7 +417,7 @@ class OneOpsComponent:
                 module.params['component']['name'],
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def exists(module):
@@ -419,7 +446,7 @@ class OneOpsComponent:
                 module.params['component']['template_name'],
             )
         )
-        defaults = json.loads(resp.read())
+        defaults = handle_oneops_api_response(module, resp, info)
         cms_dj_ci = module_argument_spec.merge_dicts({}, (defaults, {
             'ciName': module.params['component']['name'],
             'comments': module.params['component']['comments'],
@@ -439,7 +466,7 @@ class OneOpsComponent:
                 'cms_dj_ci': cms_dj_ci,
             }
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def update(module):
@@ -460,7 +487,7 @@ class OneOpsComponent:
                 },
             },
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def upsert(module):
@@ -481,7 +508,7 @@ class OneOpsComponent:
                 module.params['component']['name'],
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
 
 # end class OneOpsComponent
@@ -500,7 +527,7 @@ class OneOpsAttachment:
                 module.params['component']['name'],
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def get(module):
@@ -515,7 +542,7 @@ class OneOpsAttachment:
                 module.params['attachment']['name'],
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def exists(module):
@@ -546,7 +573,7 @@ class OneOpsAttachment:
                 module.params['component']['name'],
             ),
         )
-        defaults = json.loads(resp.read())
+        defaults = handle_oneops_api_response(module, resp, info)
 
         cms_dj_ci = module_argument_spec.merge_dicts({}, (defaults, {
             'ciName': module.params['attachment']['name'],
@@ -569,7 +596,7 @@ class OneOpsAttachment:
                 'cms_dj_ci': cms_dj_ci,
             },
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
 
     @staticmethod
@@ -592,7 +619,7 @@ class OneOpsAttachment:
                 },
             },
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
 
     @staticmethod
@@ -616,7 +643,7 @@ class OneOpsAttachment:
                 module.params['attachment']['name'],
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
 
 # end class OneOpsAttachment
@@ -633,7 +660,7 @@ class OneOpsRelease:
                 module.params['assembly']['name'],
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def get(module, release):
@@ -646,7 +673,7 @@ class OneOpsRelease:
                 release
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def latest(module):
@@ -658,7 +685,7 @@ class OneOpsRelease:
                 module.params['assembly']['name']
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def commit(module, release):
@@ -672,7 +699,7 @@ class OneOpsRelease:
             ),
             json={'desc': module.params['release']['description']}
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def discard(module, release):
@@ -685,7 +712,7 @@ class OneOpsRelease:
                 release
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
 
 # end class OneOpsDesignRelease
@@ -701,7 +728,7 @@ class OneOpsCloud:
                 module.params['organization'],
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def get(module, cloud):
@@ -713,7 +740,7 @@ class OneOpsCloud:
                 cloud
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
 
 # end class OneOpsCloud
@@ -730,7 +757,7 @@ class OneOpsEnvironment:
                 module.params['assembly']['name'],
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def get(module):
@@ -743,7 +770,7 @@ class OneOpsEnvironment:
                 module.params['environment']['name'],
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def exists(module):
@@ -768,7 +795,7 @@ class OneOpsEnvironment:
                 module.params['assembly']['name'],
             ),
         )
-        env_defaults = json.loads(resp.read())
+        env_defaults = handle_oneops_api_response(module, resp, info)
         cms_ci = module_argument_spec.merge_dicts({}, (env_defaults, {
             'ciName': module.params['environment']['name'],
             'comments': module.params['environment']['comments'],
@@ -817,7 +844,7 @@ class OneOpsEnvironment:
             ),
             json=json_payload
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def update(module):
@@ -833,7 +860,7 @@ class OneOpsEnvironment:
             ),
             json=json_payload
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def upsert(module):
@@ -853,7 +880,7 @@ class OneOpsEnvironment:
                 module.params['environment']['name']
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def pull_design(module):
@@ -866,7 +893,7 @@ class OneOpsEnvironment:
                 module.params['environment']['name']
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def commit(module):
@@ -880,7 +907,7 @@ class OneOpsEnvironment:
             ),
             json={'desc': module.params['release']['description']},
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def discard(module):
@@ -893,7 +920,7 @@ class OneOpsEnvironment:
                 module.params['environment']['name'],
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def enable(module, platform_ids=None):
@@ -910,7 +937,7 @@ class OneOpsEnvironment:
             ),
             query_params=query_params,
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def disable(module, platform_ids=None):
@@ -927,7 +954,7 @@ class OneOpsEnvironment:
             ),
             query_params=query_params,
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
 
 # end class OneOpsEnvironment
@@ -946,7 +973,7 @@ class OneOpsEnvironmentRelease:
             ),
         )
 
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def get(module, release):
@@ -960,7 +987,7 @@ class OneOpsEnvironmentRelease:
                 release,
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def latest(module):
@@ -973,7 +1000,7 @@ class OneOpsEnvironmentRelease:
                 module.params['environment']['name'],
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def exists(module, release):
@@ -1000,7 +1027,7 @@ class OneOpsEnvironmentRelease:
                 module.params['environment']['name'],
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def discard(module, release):
@@ -1014,7 +1041,7 @@ class OneOpsEnvironmentRelease:
                 release,
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
 
 # end class OneOpsEnvironmentRelease
@@ -1032,7 +1059,7 @@ class OneOpsEnvironmentDeployment:
                 module.params['environment']['name'],
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def get(module, deployment_id):
@@ -1046,7 +1073,7 @@ class OneOpsEnvironmentDeployment:
                 deployment_id,
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def latest(module):
@@ -1059,7 +1086,7 @@ class OneOpsEnvironmentDeployment:
                 module.params['environment']['name'],
             ),
         )
-        data = json.loads(resp.read())
+        data = handle_oneops_api_response(module, resp, info)
         return data
 
     @staticmethod
@@ -1073,7 +1100,7 @@ class OneOpsEnvironmentDeployment:
                 module.params['environment']['name'],
             ),
         )
-        data = json.loads(resp.read())
+        data = handle_oneops_api_response(module, resp, info)
         return data
 
     @staticmethod
@@ -1093,7 +1120,7 @@ class OneOpsEnvironmentDeployment:
                 },
             },
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def update(module, deployment, state):
@@ -1112,7 +1139,7 @@ class OneOpsEnvironmentDeployment:
                 },
             },
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def cancel(module, deployment):
@@ -1147,7 +1174,7 @@ class OneOpsTransitionPlatform:
                 module.params['environment']['name'],
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def get(module):
@@ -1161,7 +1188,7 @@ class OneOpsTransitionPlatform:
                 module.params['platform']['name'],
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def exists(module):
@@ -1190,7 +1217,7 @@ class OneOpsTransitionPlatform:
             ),
             json={}
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def toggle(module):
@@ -1225,7 +1252,7 @@ class OneOpsTransitionComponent:
                 module.params['platform']['name'],
             )
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def get(module):
@@ -1240,7 +1267,7 @@ class OneOpsTransitionComponent:
                 module.params['component']['name'],
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def exists(module):
@@ -1276,7 +1303,7 @@ class OneOpsTransitionComponent:
                 }
             },
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def touch(module):
@@ -1291,7 +1318,7 @@ class OneOpsTransitionComponent:
                 module.params['component']['name'],
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def deploy(module):
@@ -1306,7 +1333,7 @@ class OneOpsTransitionComponent:
                 module.params['component']['name'],
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
 # end class OneOpsTransitionComponent
 
@@ -1350,7 +1377,7 @@ class OneOpsTransitionVariable:
             method='GET',
             uri=OneOpsTransitionVariable.get_uri(module),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def get(module):
@@ -1359,7 +1386,7 @@ class OneOpsTransitionVariable:
             method='GET',
             uri=OneOpsTransitionVariable.get_uri(module, root_path=False),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def exists(module):
@@ -1397,7 +1424,7 @@ class OneOpsTransitionVariable:
                 },
             },
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def upsert(module):
@@ -1422,7 +1449,7 @@ class OneOpsTransitionAttachment:
                 module.params['component']['name'],
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def get(module):
@@ -1438,7 +1465,7 @@ class OneOpsTransitionAttachment:
                 module.params['attachment']['name'],
             ),
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def exists(module):
@@ -1475,7 +1502,7 @@ class OneOpsTransitionAttachment:
                 },
             },
         )
-        return json.loads(resp.read())
+        return handle_oneops_api_response(module, resp, info)
 
 
 # end class OneOpsTransitionAttachment

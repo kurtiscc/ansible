@@ -154,7 +154,7 @@ def is_deployment_active_or_pending(deployment):
 
 def get_needed_deployment(module):
     try:
-        deployment_bom = oneops_api.OneOpsEnvironmentDeployment.bom(module)
+        deployment_bom, status, errors = oneops_api.OneOpsEnvironmentDeployment.bom(module)
     except AttributeError:
         deployment_bom = None
 
@@ -165,12 +165,21 @@ def get_needed_deployment(module):
 def wait_for_deployment_completion(module, deployment):
     while not deployment or "deploymentState" not in deployment or is_deployment_active_or_pending(deployment):
         time.sleep(5)
-        deployment = oneops_api.OneOpsEnvironmentDeployment.latest(module)
+        deployment, status, errors = oneops_api.OneOpsEnvironmentDeployment.latest(module)
+        if not deployment:
+            module.fail_json(
+                msg='Error fetching deployment in the %s environment while waiting for completion' %
+                    module.params['environment']['name'],
+                status=status, errors=errors)
     return deployment
 
 
 def create_new_deployment_and_wait_for_completion(module, release):
-    deployment = oneops_api.OneOpsEnvironmentDeployment.create(module, release)
+    deployment, status, errors = oneops_api.OneOpsEnvironmentDeployment.create(module, release)
+    if errors:
+        module.fail_json(
+            msg='Error creating deployment in the %s environment' %module.params['environment']['name'],
+            status=status, errors=errors)
     deployment = wait_for_deployment_completion(module, deployment)
     return deployment
 

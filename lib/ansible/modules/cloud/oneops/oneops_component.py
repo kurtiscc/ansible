@@ -152,10 +152,18 @@ def ensure_component(module, state):
 
     # Get original component if it exists
     if oneops_api.OneOpsComponent.exists(module):
-        old_component = oneops_api.OneOpsComponent.get(module)
+        old_component, status, errors = oneops_api.OneOpsComponent.get(module)
+        if not old_component:
+            module.fail_json(
+                msg='Error fetching existing component %s before updating it' % module.params['component']['name'],
+                status=status, errors=errors)
 
     # Update and store the component
-    new_component = oneops_api.OneOpsComponent.upsert(module)
+    new_component, status, errors = oneops_api.OneOpsComponent.upsert(module)
+    if not new_component:
+        module.fail_json(
+            msg='Error creating/updating component %s' % module.params['component']['name'],
+            status=status, errors=errors)
 
     # We don't need to compare dependents or dependsOn to calculate changed
     old_component.pop('dependents', None)
@@ -175,7 +183,7 @@ def ensure_component(module, state):
 
 def delete_component(module, state):
     if oneops_api.OneOpsComponent.exists(module):
-        component = oneops_api.OneOpsComponent.get(module)
+        component, _, _ = oneops_api.OneOpsComponent.get(module)
         oneops_api.OneOpsComponent.delete(module)
         state.update(dict(
             changed=True,

@@ -142,7 +142,11 @@ from ansible.module_utils.oneops import oneops_api
 def enable_platform(module, state):
     if oneops_api.OneOpsTransitionPlatform.exists(module):
         state.update(changed=True)  # TODO: Determine if platform is already enabled
-        oneops_api.OneOpsTransitionPlatform.enable(module)
+        _, status, errors = oneops_api.OneOpsTransitionPlatform.enable(module)
+        if errors:
+            module.fail_json(
+                msg='Error enabling platform in the %s environment' % module.params['environment']['name'],
+                status=status, errors=errors)
 
     module.exit_json(**state)
 
@@ -150,7 +154,11 @@ def enable_platform(module, state):
 def disable_platform(module, state):
     if oneops_api.OneOpsTransitionPlatform.exists(module):
         state.update(changed=True)  # TODO: Determine if platform is already disabled
-        oneops_api.OneOpsTransitionPlatform.disable(module)
+        _, status, errors = oneops_api.OneOpsTransitionPlatform.disable(module)
+        if errors:
+            module.fail_json(
+                msg='Error disabling platform in the %s environment' % module.params['environment']['name'],
+                status=status, errors=errors)
 
     module.exit_json(**state)
 

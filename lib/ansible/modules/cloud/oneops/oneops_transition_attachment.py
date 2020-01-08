@@ -152,10 +152,19 @@ def ensure_transition_attachment(module, state):
 
     # Get original attachment if it exists
     if oneops_api.OneOpsTransitionAttachment.exists(module):
-        old_attachment = oneops_api.OneOpsTransitionAttachment.get(module)
+        old_attachment, status, errors = oneops_api.OneOpsTransitionAttachment.get(module)
+        if not old_attachment:
+            module.fail_json(
+                msg='Error while fetching existing transition attachment %s before updating it' % module.params['attachment']['name'],
+                status=status, errors=errors)
 
     # Update and store the attachment
-    new_attachment = oneops_api.OneOpsTransitionAttachment.update(module)
+    new_attachment, status, errors = oneops_api.OneOpsTransitionAttachment.update(module)
+    if errors:
+        module.fail_json(
+            msg='Error updating transition attachment %s' %
+                module.params['attachment']['name'],
+            status=status, errors=errors)
 
     # Compare the original vs the new attachment
     diff = dict_transformations.recursive_diff(old_attachment, new_attachment)

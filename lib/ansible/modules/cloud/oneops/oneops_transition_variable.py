@@ -152,10 +152,18 @@ def ensure_transition_variable(module, state):
 
     # Get original variable if it exists
     if oneops_api.OneOpsTransitionVariable.exists(module):
-        old_variable = oneops_api.OneOpsTransitionVariable.get(module)
+        old_variable, status, errors = oneops_api.OneOpsTransitionVariable.get(module)
+        if not old_variable:
+            module.fail_json(
+                msg='Error fetching existing transition variable %s' % module.params['variable']['name'],
+                status=status, errors=errors)
 
     # Update and store the variable
-    new_variable = oneops_api.OneOpsTransitionVariable.upsert(module)
+    new_variable, status, errors = oneops_api.OneOpsTransitionVariable.upsert(module)
+    if errors:
+        module.fail_json(
+            msg='Error updating existing transition variable %s' % module.params['variable']['name'],
+            status=status, errors=errors)
 
     # Compare the original vs the new variable
     diff = dict_transformations.recursive_diff(old_variable, new_variable)

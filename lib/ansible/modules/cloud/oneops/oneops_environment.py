@@ -191,11 +191,11 @@ def pull_design(module, state):
     if oneops_api.OneOpsEnvironment.exists(module):
 
         try:
-            latest_transition_release = oneops_api.OneOpsEnvironmentRelease.latest(module)
+            latest_transition_release, _, _ = oneops_api.OneOpsEnvironmentRelease.latest(module)
         except AttributeError:
             latest_transition_release = None
 
-        latest_design_release = oneops_api.OneOpsRelease.latest(module)
+        latest_design_release, _, _ = oneops_api.OneOpsRelease.latest(module)
         if latest_transition_release \
                 and latest_design_release \
                 and not latest_transition_release['releaseState'] == 'open' \
@@ -215,10 +215,18 @@ def ensure_environment(module, state):
 
     # Get original environment if it exists
     if oneops_api.OneOpsEnvironment.exists(module):
-        old_environment = oneops_api.OneOpsEnvironment.get(module)
+        old_environment, status, errors = oneops_api.OneOpsEnvironment.get(module)
+        if not old_environment:
+            module.fail_json(
+                msg='Error fetching existing environment %s before updating it' % module.params['environment']['name'],
+                status=status, errors=errors)
 
     # Update and store the environment
-    new_environment = oneops_api.OneOpsEnvironment.upsert(module)
+    new_environment, status, errors = oneops_api.OneOpsEnvironment.upsert(module)
+    if not new_environment:
+        module.fail_json(
+            msg='Error creating/updating environment %s' % module.params['environment']['name'],
+            status=status, errors=errors)
 
     # Compare the original vs the new environment
     diff = dict_transformations.recursive_diff(old_environment, new_environment)
@@ -237,8 +245,18 @@ def ensure_environment(module, state):
 
 def delete_environment(module, state):
     if oneops_api.OneOpsEnvironment.exists(module):
-        environment = oneops_api.OneOpsEnvironment.get(module)
-        oneops_api.OneOpsEnvironment.delete(module)
+        environment, status, errors = oneops_api.OneOpsEnvironment.get(module)
+        if not environment:
+            module.fail_json(
+                msg='Error fetching existing environment %s before deleting it' % module.params['environment']['name'],
+                status=status, errors=errors)
+
+        _, status, errors = oneops_api.OneOpsEnvironment.delete(module)
+        if errors:
+            module.fail_json(
+                msg='Error deleting existing environment %s' % module.params['environment']['name'],
+                status=status, errors=errors)
+
         state.update(dict(
             changed=True,
             environment=environment
