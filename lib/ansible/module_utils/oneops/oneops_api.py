@@ -1407,3 +1407,75 @@ class OneOpsTransitionVariable:
 
 
 # end class OneOpsTransitionVariable
+
+class OneOpsTransitionAttachment:
+    @staticmethod
+    def all(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/transition/environments/%s/platforms/%s/components/%s/attachments' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+            ),
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def get(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/transition/environments/%s/platforms/%s/components/%s/attachments/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+                module.params['attachment']['name'],
+            ),
+        )
+        return json.loads(resp.read())
+
+    @staticmethod
+    def exists(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/transition/environments/%s/platforms/%s/components/%s/attachments/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+                module.params['attachment']['name'],
+            ),
+        )
+        return info['status'] == 200
+
+    @staticmethod
+    def update(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="PUT",
+            uri='%s/assemblies/%s/transition/environments/%s/platforms/%s/components/%s/attachments/%s' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+                module.params['attachment']['name'],
+            ),
+            json={
+                'cms_dj_ci': {
+                    'ciAttributes': module.params['attachment']['attr'] or None,
+                },
+            },
+        )
+        return json.loads(resp.read())
+
+
+# end class OneOpsTransitionAttachment
