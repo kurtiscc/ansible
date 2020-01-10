@@ -1086,8 +1086,7 @@ class OneOpsEnvironmentDeployment:
                 module.params['environment']['name'],
             ),
         )
-        data, status, errors = handle_oneops_api_response(module, resp, info)
-        return data
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def bom(module):
@@ -1100,8 +1099,7 @@ class OneOpsEnvironmentDeployment:
                 module.params['environment']['name'],
             ),
         )
-        data, status, errors = handle_oneops_api_response(module, resp, info)
-        return data
+        return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
     def create(module, release):
