@@ -808,7 +808,7 @@ class OneOpsEnvironment:
 
         # Build clouds
         def build_cloud_dict(cloud_def):
-            cloud = OneOpsCloud.get(module, cloud_def['name'])
+            cloud, cloud_status, cloud_errors = OneOpsCloud.get(module, cloud_def['name'])
             return dict({str(cloud['ciId']): dict({
                 'priority': str(cloud_def['priority']),
                 'dpmt_order': str(cloud_def['dpmt_order']),
@@ -822,7 +822,7 @@ class OneOpsEnvironment:
                 map(build_cloud_dict, module.params['environment']['clouds'])))
 
         # Build platform_availability
-        platforms = OneOpsPlatform.all(module)
+        platforms, platforms_status, platforms_error = OneOpsPlatform.all(module)
         platform_availability = module_argument_spec.merge_dicts({}, list(
             map(lambda platform: dict({platform['ciId']: cms_ci['ciAttributes']['availability']}), platforms)))
 
@@ -1221,17 +1221,17 @@ class OneOpsTransitionPlatform:
 
     @staticmethod
     def toggle(module):
-        platform = OneOpsTransitionPlatform.get(module)
+        platform, platform_status, platform_error = OneOpsTransitionPlatform.get(module)
         OneOpsEnvironment.disable(module, platform_ids=[platform['ciId']])
 
     @staticmethod
     def enable(module):
-        platform = OneOpsTransitionPlatform.get(module)
+        platform, platform_status, platform_error = OneOpsTransitionPlatform.get(module)
         OneOpsEnvironment.enable(module, platform_ids=[platform['ciId']])
 
     @staticmethod
     def disable(module):
-        platform = OneOpsTransitionPlatform.get(module)
+        platform, platform_status, platform_error = OneOpsTransitionPlatform.get(module)
         OneOpsEnvironment.disable(module, platform_ids=[platform['ciId']])
 
 
