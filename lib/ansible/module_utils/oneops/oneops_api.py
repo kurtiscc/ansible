@@ -209,7 +209,7 @@ class OneOpsPlatform:
                 module.params['assembly']['name'],
             )
         )
-        defaults = handle_oneops_api_response(module, resp, info)
+        defaults, status, errors = handle_oneops_api_response(module, resp, info)
         cms_dj_ci = module_argument_spec.merge_dicts({}, (defaults, {
             'ciName': module.params['platform']['name'],
             'comments': module.params['platform']['comments'],
@@ -446,7 +446,7 @@ class OneOpsComponent:
                 module.params['component']['template_name'],
             )
         )
-        defaults = handle_oneops_api_response(module, resp, info)
+        defaults, status, errors = handle_oneops_api_response(module, resp, info)
         cms_dj_ci = module_argument_spec.merge_dicts({}, (defaults, {
             'ciName': module.params['component']['name'],
             'comments': module.params['component']['comments'],
@@ -573,7 +573,7 @@ class OneOpsAttachment:
                 module.params['component']['name'],
             ),
         )
-        defaults = handle_oneops_api_response(module, resp, info)
+        defaults, status, errors = handle_oneops_api_response(module, resp, info)
 
         cms_dj_ci = module_argument_spec.merge_dicts({}, (defaults, {
             'ciName': module.params['attachment']['name'],
@@ -795,7 +795,7 @@ class OneOpsEnvironment:
                 module.params['assembly']['name'],
             ),
         )
-        env_defaults = handle_oneops_api_response(module, resp, info)
+        env_defaults, status, errors = handle_oneops_api_response(module, resp, info)
         cms_ci = module_argument_spec.merge_dicts({}, (env_defaults, {
             'ciName': module.params['environment']['name'],
             'comments': module.params['environment']['comments'],
@@ -1086,7 +1086,7 @@ class OneOpsEnvironmentDeployment:
                 module.params['environment']['name'],
             ),
         )
-        data = handle_oneops_api_response(module, resp, info)
+        data, status, errors = handle_oneops_api_response(module, resp, info)
         return data
 
     @staticmethod
@@ -1100,7 +1100,7 @@ class OneOpsEnvironmentDeployment:
                 module.params['environment']['name'],
             ),
         )
-        data = handle_oneops_api_response(module, resp, info)
+        data, status, errors = handle_oneops_api_response(module, resp, info)
         return data
 
     @staticmethod
