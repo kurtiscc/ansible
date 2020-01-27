@@ -25,7 +25,14 @@ author:
 '''
 
 EXAMPLES = '''
-TODO
+- name: Get Clouds Info
+  oneops_cloud_info:
+    oneops_host: oneops.example.com
+    api_key: 12345abcde
+    email: sam.walton@walmart.com
+    organization: my-organization
+    cloud:
+      id: my-cloud-1
 '''
 
 RETURN = '''

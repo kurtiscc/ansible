@@ -25,7 +25,16 @@ author:
 '''
 
 EXAMPLES = '''
-TODO
+- name: Get Environment Info
+  oneops_environment_info:
+    oneops_host: oneops.example.com
+    api_key: 12345abcde
+    email: sam.walton@walmart.com
+    organization: my-organization
+    assembly:
+      name: my-assembly
+    environment:
+      name: my-environment
 '''
 
 RETURN = '''

@@ -25,7 +25,22 @@ author:
 '''
 
 EXAMPLES = '''
-TODO
+- name: Get Design Attachment Info
+  oneops_transition_attachment_info:
+    oneops_host: oneops.example.com
+    api_key: 12345abcde
+    email: sam.walton@walmart.com
+    organization: my-organization
+    assembly:
+      name: my-assembly
+    environment:
+      name: my-env
+    platform:
+      name: my-platform
+    component:
+      name: my-component
+    attachment:
+      name: my-attachment
 '''
 
 RETURN = '''

@@ -25,7 +25,16 @@ author:
 '''
 
 EXAMPLES = '''
-TODO
+- name: Get Platform Info
+  oneops_platform_info:
+    oneops_host: oneops.example.com
+    api_key: 12345abcde
+    email: sam.walton@walmart.com
+    organization: my-organization
+    assembly:
+      name: my-assembly
+    platform:
+      name: my-assembly
 '''
 
 RETURN = '''
