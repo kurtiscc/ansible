@@ -152,11 +152,11 @@ def get_oneops_argument_spec_fragment_transition_component():
     )
 
 
-def get_oneops_argument_spec_fragment_transition_attachment():
+def get_oneops_argument_spec_fragment_transition_attachment(require_attrs=True):
     return dict(
         attachment=dict(type='dict', required=True, options=dict(
             name=dict(type='str', required=True),
-            attr=dict(type='dict', required=True),
+            attr=dict(type='dict', required=require_attrs),
             state=dict(type='str', required=False, default='present', choices=['present']),
         ))
     )
@@ -226,6 +226,17 @@ def get_oneops_transition_variable_module_argument_spec():
     ))
 
 
+
+def get_oneops_component_info_module_argument_spec():
+    return merge_dicts(dict(), (
+        get_oneops_argument_spec_fragment_base(),
+        get_oneops_argument_spec_fragment_organization(),
+        get_oneops_argument_spec_fragment_assembly(),
+        get_oneops_argument_spec_fragment_platform(),
+        get_oneops_argument_spec_fragment_component(template_required=False),
+    ))
+
+
 def get_oneops_component_module_argument_spec():
     return merge_dicts(dict(), (
         get_oneops_argument_spec_fragment_base(),
@@ -246,6 +257,20 @@ def get_oneops_attachment_module_argument_spec():
         get_oneops_argument_spec_fragment_attachment(),
     ))
 
+
+def get_oneops_cloud_info_module_argument_spec():
+    return merge_dicts(dict(), (
+        get_oneops_argument_spec_fragment_base(),
+        get_oneops_argument_spec_fragment_organization(),
+        get_oneops_argument_spec_fragment_cloud(),
+    ))
+
+def get_oneops_argument_spec_fragment_cloud():
+    return dict(
+        cloud=dict(type='dict', required=True, options=dict(
+            id=dict(type='str', required=True),
+        ))
+    )
 
 def get_oneops_release_module_argument_spec():
     return merge_dicts(dict(), (
@@ -297,6 +322,16 @@ def get_oneops_transition_attachment_module_argument_spec():
         get_oneops_argument_spec_fragment_transition_attachment(),
     ))
 
+def get_oneops_transition_attachment_info_module_argument_spec():
+    return merge_dicts(dict(), (
+        get_oneops_argument_spec_fragment_base(),
+        get_oneops_argument_spec_fragment_organization(),
+        get_oneops_argument_spec_fragment_assembly(),
+        get_oneops_argument_spec_fragment_environment(),
+        get_oneops_argument_spec_fragment_transition_platform(),
+        get_oneops_argument_spec_fragment_transition_component(),
+        get_oneops_argument_spec_fragment_transition_attachment(require_attrs=False),
+    ))
 
 def get_oneops_transition_release_module_argument_spec():
     return merge_dicts(dict(), (

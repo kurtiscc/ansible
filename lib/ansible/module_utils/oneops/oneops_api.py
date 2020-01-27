@@ -731,17 +731,20 @@ class OneOpsCloud:
         return handle_oneops_api_response(module, resp, info)
 
     @staticmethod
-    def get(module, cloud):
+    def get_by_org_cloud(module, organization, cloud):
         resp, info = fetch_oneops_api(
             module,
             method="GET",
             uri='%s/clouds/%s' % (
-                module.params['organization'],
+                organization,
                 cloud
             )
         )
         return handle_oneops_api_response(module, resp, info)
 
+    @staticmethod
+    def get(module):
+        return OneOpsCloud.get_by_org_cloud(module, module.params['organization'], module.params['cloud']['id'])
 
 # end class OneOpsCloud
 
@@ -808,7 +811,7 @@ class OneOpsEnvironment:
 
         # Build clouds
         def build_cloud_dict(cloud_def):
-            cloud, cloud_status, cloud_errors = OneOpsCloud.get(module, cloud_def['name'])
+            cloud, cloud_status, cloud_errors = OneOpsCloud.get_by_org_cloud(module, module.params['organization'], cloud_def['name'])
             return dict({str(cloud['ciId']): dict({
                 'priority': str(cloud_def['priority']),
                 'dpmt_order': str(cloud_def['dpmt_order']),
