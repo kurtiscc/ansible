@@ -1507,3 +1507,19 @@ class OneOpsTransitionAttachment:
 
 
 # end class OneOpsTransitionAttachment
+
+class OneOpsOperationInstance:
+    @staticmethod
+    def get(module):
+        resp, info = fetch_oneops_api(
+            module,
+            method="GET",
+            uri='%s/assemblies/%s/operations/environments/%s/platforms/%s/components/%s/instances' % (
+                module.params['organization'],
+                module.params['assembly']['name'],
+                module.params['environment']['name'],
+                module.params['platform']['name'],
+                module.params['component']['name'],
+            ),
+        )
+        return handle_oneops_api_response(module, resp, info)

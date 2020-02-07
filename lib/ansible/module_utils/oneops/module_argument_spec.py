@@ -310,6 +310,15 @@ def get_oneops_transition_component_module_argument_spec():
         get_oneops_argument_spec_fragment_transition_component(),
     ))
 
+def get_oneops_operation_instance_info_module_argument_spec():
+    return merge_dicts(dict(), (
+        get_oneops_argument_spec_fragment_base(),
+        get_oneops_argument_spec_fragment_organization(),
+        get_oneops_argument_spec_fragment_assembly(),
+        get_oneops_argument_spec_fragment_environment(),
+        get_oneops_argument_spec_fragment_transition_platform(),
+        get_oneops_argument_spec_fragment_transition_component(),
+    ))
 
 def get_oneops_transition_attachment_module_argument_spec():
     return merge_dicts(dict(), (
