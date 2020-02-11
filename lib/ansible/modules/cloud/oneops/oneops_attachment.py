@@ -159,7 +159,7 @@ def ensure_attachment(module, state):
                 status=status, errors=errors)
 
     # Update and store the attachment
-    new_attachment, _, _ = oneops_api.OneOpsAttachment.upsert(module)
+    new_attachment, status, errors = oneops_api.OneOpsAttachment.upsert(module)
     if not new_attachment:
         module.fail_json(
             msg='Error creating/updating attachment %s' % module.params['attachment']['name'],
